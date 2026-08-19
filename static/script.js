@@ -18,6 +18,79 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// ---------- pill groups (single-select) ----------
+document.querySelectorAll('.pill-group[data-single="true"]').forEach(group => {
+  const hidden = document.getElementById(group.dataset.name + '_input');
+  group.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      group.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      hidden.value = pill.dataset.value;
+    });
+  });
+});
+
+// ---------- style grid (multi-select) ----------
+const selectedStyles = new Set();
+async function loadStyleGrid() {
+  const grid = document.getElementById('style-grid');
+  try {
+    const res = await fetch('/api/styles');
+    const list = await res.json();
+    grid.innerHTML = list.map(s => `
+      <button type="button" class="style-card" data-key="${s.key}">
+        <p class="sc-name">${escapeHtml(s.label)}</p>
+        <p class="sc-desc">${escapeHtml(s.description)}</p>
+      </button>
+    `).join('');
+    grid.querySelectorAll('.style-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const key = card.dataset.key;
+        if (selectedStyles.has(key)) { selectedStyles.delete(key); card.classList.remove('selected'); }
+        else { selectedStyles.add(key); card.classList.add('selected'); }
+      });
+    });
+  } catch { grid.innerHTML = '<p class="empty-state">Could not load styles.</p>'; }
+}
+loadStyleGrid();
+
+// ---------- wizard navigation ----------
+const steps = Array.from(document.querySelectorAll('.wizard-step'));
+const progressSteps = Array.from(document.querySelectorAll('.wp-step'));
+let currentStep = 1;
+const totalSteps = steps.length;
+
+function showStep(n) {
+  steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === n));
+  progressSteps.forEach(p => {
+    const s = Number(p.dataset.step);
+    p.classList.toggle('active', s === n);
+    p.classList.toggle('done', s < n);
+  });
+  document.getElementById('wiz-back').hidden = n === 1;
+  document.getElementById('wiz-next').hidden = n === totalSteps;
+  document.getElementById('submit-btn').hidden = n !== totalSteps;
+  currentStep = n;
+}
+
+function validateStep(n) {
+  const step = steps.find(s => Number(s.dataset.step) === n);
+  const inputs = step.querySelectorAll('input[required]');
+  for (const inp of inputs) {
+    if (!inp.value) { inp.reportValidity(); return false; }
+  }
+  return true;
+}
+
+document.getElementById('wiz-next').addEventListener('click', () => {
+  if (!validateStep(currentStep)) return;
+  if (currentStep < totalSteps) showStep(currentStep + 1);
+});
+document.getElementById('wiz-back').addEventListener('click', () => {
+  if (currentStep > 1) showStep(currentStep - 1);
+});
+
+// ---------- style profile + outfit rendering ----------
 function outfitCardHtml(o) {
   const tpl = document.getElementById('outfit-card-template').content.cloneNode(true);
   const card = tpl.querySelector('.outfit-card');
@@ -39,14 +112,42 @@ function outfitCardHtml(o) {
   return card;
 }
 
+function styleProfileHtml(sp) {
+  if (!sp) return '';
+  return `
+    <div class="style-profile" style="--sp-color:${sp.top.hex}">
+      <p class="sp-eyebrow">Your style profile</p>
+      <h2 class="sp-title">${escapeHtml(sp.style_label)}</h2>
+      <p class="sp-silhouette">${escapeHtml(sp.silhouette)} &middot; ${escapeHtml(sp.recommended_fit)} fit</p>
+      <div class="sp-grid">
+        <div class="sp-piece top">
+          <p class="sp-piece-label">Top</p>
+          <p class="sp-piece-value">${escapeHtml(sp.top.garment)}, ${escapeHtml(sp.top.colour)}</p>
+        </div>
+        <div class="sp-piece">
+          <p class="sp-piece-label">Bottom</p>
+          <p class="sp-piece-value">${escapeHtml(sp.bottom.garment)}</p>
+        </div>
+        <div class="sp-piece">
+          <p class="sp-piece-label">Shoes</p>
+          <p class="sp-piece-value">${escapeHtml(sp.shoes.garment)}</p>
+        </div>
+        ${sp.layer ? `<div class="sp-piece"><p class="sp-piece-label">Layer</p><p class="sp-piece-value">${escapeHtml(sp.layer)}</p></div>` : ''}
+      </div>
+      <p class="sp-why">${escapeHtml(sp.why)}</p>
+    </div>
+  `;
+}
+
 function renderProfileResult(container, data) {
   container.innerHTML = `
+    ${styleProfileHtml(data.style_profile)}
     <div class="result-block">
       <h2>${escapeHtml(data.name)}'s skin tone</h2>
       <div class="skin-row">
         <span class="skin-swatch" style="background:${data.skin.hex}"></span>
         <div>
-          <p class="hex">${data.skin.hex}</p>
+          <p class="hex mono">${data.skin.hex}</p>
           <p class="meta">${data.skin.undertone} undertone, ${data.skin.depth} depth</p>
         </div>
       </div>
@@ -61,7 +162,7 @@ function renderProfileResult(container, data) {
       </div>
     </div>
     <div class="result-block">
-      <h2>Outfits</h2>
+      <h2>All outfit options</h2>
       <p class="meta">Palette match: ${data.palette_label}</p>
       <div class="fan-deck" id="outfit-cards-${data.id}"></div>
     </div>
@@ -70,7 +171,7 @@ function renderProfileResult(container, data) {
   data.outfits.forEach(o => deck.appendChild(outfitCardHtml(o)));
 }
 
-// ---------- new reading form ----------
+// ---------- form submit ----------
 const form = document.getElementById('analyze-form');
 const submitBtn = document.getElementById('submit-btn');
 const errorMsg = document.getElementById('error-msg');
@@ -82,7 +183,9 @@ form.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Reading...';
   try {
-    const res = await fetch('/api/analyze', { method: 'POST', body: new FormData(form) });
+    const fd = new FormData(form);
+    selectedStyles.forEach(k => fd.append('style_preference', k));
+    const res = await fetch('/api/analyze', { method: 'POST', body: fd });
     const data = await res.json();
     if (!res.ok) { errorMsg.textContent = data.error || 'Something went wrong'; return; }
     renderProfileResult(results, data);
@@ -130,7 +233,6 @@ document.getElementById('refresh-catalog-btn').addEventListener('click', async (
     btn.textContent = 'Check real stock';
   }
 });
-
 checkCatalogStatus();
 
 // ---------- saved profiles ----------

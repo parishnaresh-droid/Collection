@@ -3,17 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Palette &amp; fit</title>
+<title>Fitting card</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..600&family=Space+Grotesk:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+<div class="crop-mark tl" aria-hidden="true"></div>
+<div class="crop-mark tr" aria-hidden="true"></div>
+
 <main>
-  <header class="intro">
-    <p class="eyebrow">a fitting card, made from a photo</p>
-    <h1>Find your palette, then your fit</h1>
-    <p class="sub">Real skin-tone extraction, real ratio-based body shape math, and a live product catalog pulled from actual stores &mdash; not a mockup.</p>
+  <header class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">No. 001 &middot; issued from a photo</p>
+      <h1>Find your palette,<br>then your fit.</h1>
+      <p class="sub">Real skin-tone extraction. Real ratio-based body-shape math. A live product catalog pulled from actual stores. Every swatch on this page is a genuine reading &mdash; not a mockup.</p>
+    </div>
+    <div class="hero-swatches" id="hero-swatches" aria-hidden="true">
+      <div class="swatch-tag st-1" style="--tag-color:#7B2D26"><span class="tag-name">burgundy</span></div>
+      <div class="swatch-tag st-2" style="--tag-color:#556B2F"><span class="tag-name">olive</span></div>
+      <div class="swatch-tag st-3" style="--tag-color:#C1502E"><span class="tag-name">rust</span></div>
+      <div class="swatch-tag st-4" style="--tag-color:#C99A2E"><span class="tag-name">mustard</span></div>
+    </div>
   </header>
 
   <nav class="tabs" role="tablist">
@@ -24,31 +35,85 @@
 
   <!-- NEW READING -->
   <section class="view" id="view-new">
-    <div class="card form-card">
+    <div class="card wizard-card">
+      <div class="wizard-progress" id="wizard-progress">
+        <span class="wp-step active" data-step="1">01<em>You</em></span>
+        <span class="wp-step" data-step="2">02<em>Build</em></span>
+        <span class="wp-step" data-step="3">03<em>Fit</em></span>
+        <span class="wp-step" data-step="4">04<em>Style</em></span>
+        <span class="wp-step" data-step="5">05<em>Occasion</em></span>
+      </div>
+
       <form id="analyze-form">
-        <div class="field">
-          <label for="name">Name</label>
-          <input type="text" id="name" name="name" placeholder="Whose photo is this?" required>
-        </div>
-        <div class="field">
-          <label for="photo">Photo (front-facing, even lighting)</label>
-          <input type="file" id="photo" name="photo" accept="image/*" required>
-        </div>
-        <div class="measurements">
+        <fieldset class="wizard-step active" data-step="1">
+          <p class="step-label">Step 01 &mdash; Your photo</p>
           <div class="field">
-            <label for="chest">Chest / bust (cm)</label>
-            <input type="number" id="chest" name="chest" min="50" max="200" step="0.5" required>
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Whose reading is this?" required>
           </div>
           <div class="field">
-            <label for="waist">Waist (cm)</label>
-            <input type="number" id="waist" name="waist" min="40" max="200" step="0.5" required>
+            <label for="photo">Photo (front-facing, even lighting)</label>
+            <input type="file" id="photo" name="photo" accept="image/*" required>
+          </div>
+        </fieldset>
+
+        <fieldset class="wizard-step" data-step="2">
+          <p class="step-label">Step 02 &mdash; Your build</p>
+          <div class="measurements">
+            <div class="field">
+              <label for="chest">Chest / bust (cm)</label>
+              <input type="number" id="chest" name="chest" min="50" max="200" step="0.5" required>
+            </div>
+            <div class="field">
+              <label for="waist">Waist (cm)</label>
+              <input type="number" id="waist" name="waist" min="40" max="200" step="0.5" required>
+            </div>
+            <div class="field">
+              <label for="hip">Hip (cm)</label>
+              <input type="number" id="hip" name="hip" min="50" max="200" step="0.5" required>
+            </div>
           </div>
           <div class="field">
-            <label for="hip">Hip (cm)</label>
-            <input type="number" id="hip" name="hip" min="50" max="200" step="0.5" required>
+            <label for="height_cm">Height (cm) &mdash; optional, refines proportions</label>
+            <input type="number" id="height_cm" name="height_cm" min="120" max="230" step="1">
           </div>
+        </fieldset>
+
+        <fieldset class="wizard-step" data-step="3">
+          <p class="step-label">Step 03 &mdash; Preferred fit</p>
+          <div class="pill-group" data-name="fit_preference" data-single="true">
+            <button type="button" class="pill" data-value="slim">Slim</button>
+            <button type="button" class="pill" data-value="regular">Regular</button>
+            <button type="button" class="pill" data-value="relaxed">Relaxed</button>
+            <button type="button" class="pill" data-value="oversized">Oversized</button>
+            <button type="button" class="pill" data-value="baggy">Baggy</button>
+          </div>
+          <input type="hidden" name="fit_preference" id="fit_preference_input">
+        </fieldset>
+
+        <fieldset class="wizard-step" data-step="4">
+          <p class="step-label">Step 04 &mdash; Style, pick one or more</p>
+          <div class="style-grid" id="style-grid"></div>
+        </fieldset>
+
+        <fieldset class="wizard-step" data-step="5">
+          <p class="step-label">Step 05 &mdash; Where to</p>
+          <div class="pill-group" data-name="occasion" data-single="true">
+            <button type="button" class="pill" data-value="everyday">Everyday</button>
+            <button type="button" class="pill" data-value="work">Work</button>
+            <button type="button" class="pill" data-value="date">Date</button>
+            <button type="button" class="pill" data-value="night out">Night out</button>
+            <button type="button" class="pill" data-value="travel">Travel</button>
+            <button type="button" class="pill" data-value="formal event">Formal event</button>
+          </div>
+          <input type="hidden" name="occasion" id="occasion_input">
+        </fieldset>
+
+        <div class="wizard-nav">
+          <button type="button" id="wiz-back" class="secondary-btn" hidden>Back</button>
+          <button type="button" id="wiz-next">Continue</button>
+          <button type="submit" id="submit-btn" hidden>Read my fit</button>
         </div>
-        <button type="submit" id="submit-btn">Read my fit</button>
         <p class="error" id="error-msg"></p>
       </form>
     </div>
@@ -56,7 +121,7 @@
     <div class="card catalog-bar">
       <div>
         <p class="catalog-label">Live product catalog</p>
-        <p class="meta" id="catalog-meta">Checking...</p>
+        <p class="meta mono" id="catalog-meta">Checking...</p>
       </div>
       <button id="refresh-catalog-btn" class="secondary-btn">Check real stock</button>
     </div>

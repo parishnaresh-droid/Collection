@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify, render_template
 
 import db
 import scraper
+import styles as style_data
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -143,6 +144,48 @@ STYLE_GUIDANCE = {
 }
 
 
+def build_style_profile(palette, shape, style_prefs, occasion, fit_preference, height_cm):
+    style_prefs = style_prefs or []
+    chosen_key = None
+    if style_prefs:
+        chosen_key = style_prefs[0]
+    elif occasion:
+        for key, s in style_data.STYLES.items():
+            if occasion in s["occasions"]:
+                chosen_key = key
+                break
+    if not chosen_key or chosen_key not in style_data.STYLES:
+        chosen_key = "smart_casual"
+
+    style = style_data.STYLES[chosen_key]
+    top_color = palette["colors"][0]
+
+    height_note = style_data.height_proportion_note(height_cm)
+    fit_note = style_data.fit_preference_note(fit_preference, shape["shape"])
+
+    why_parts = [
+        f"{style['label']} suits the {shape['shape']} read because {shape['reason']}.",
+    ]
+    if fit_note:
+        why_parts.append(fit_note)
+    if height_note:
+        why_parts.append(height_note)
+
+    return {
+        "style_key": chosen_key,
+        "style_label": style["label"],
+        "style_description": style["description"],
+        "recommended_fit": fit_preference or style["fit"],
+        "silhouette": style["silhouette"],
+        "colour_direction": f"{top_color['name']} leads, with {', '.join(c['name'] for c in palette['colors'][1:3])} as support",
+        "top": {"garment": style["tops"][0], "colour": top_color["name"], "hex": top_color["hex"]},
+        "bottom": {"garment": style["bottoms"][0]},
+        "shoes": {"garment": style["shoes"][0]},
+        "layer": style["tops"][-1] if len(style["tops"]) > 1 else None,
+        "why": " ".join(why_parts),
+    }
+
+
 def build_outfits(conn, palette):
     outfits = []
     with db.dict_cursor(conn) as cur:
@@ -169,12 +212,21 @@ def profile_to_response(conn, row):
     palette = next((p for p in PALETTES.values() if p["label"] == row["palette_label"]), PALETTES[("warm", "deep")])
     guidance = STYLE_GUIDANCE[row["shape"]]
     outfits = build_outfits(conn, palette)
+    shape_dict = {"shape": row["shape"], "reason": row["shape_reason"]}
+    style_profile = build_style_profile(
+        palette, shape_dict, row.get("style_preference"), row.get("occasion"),
+        row.get("fit_preference"), row.get("height_cm"),
+    )
     return {
         "id": row["id"], "name": row["name"], "created_at": row["created_at"].isoformat(),
         "skin": {"hex": row["skin_hex"], "undertone": row["undertone"], "depth": row["depth"]},
-        "shape": {"shape": row["shape"], "reason": row["shape_reason"]},
+        "shape": shape_dict,
         "style_works": guidance["works"], "style_avoid": guidance["avoid"],
         "palette_label": row["palette_label"], "outfits": outfits,
+        "height_cm": float(row["height_cm"]) if row.get("height_cm") is not None else None,
+        "fit_preference": row.get("fit_preference"), "occasion": row.get("occasion"),
+        "style_preference": row.get("style_preference") or [],
+        "style_profile": style_profile,
     }
 
 
@@ -206,13 +258,20 @@ def analyze():
         palette_key = (skin["undertone"], skin["depth"])
         palette = PALETTES.get(palette_key, PALETTES[("neutral", "light")])
 
+        height_cm = request.form.get("height_cm") or None
+        fit_preference = (request.form.get("fit_preference") or "").strip() or None
+        occasion = (request.form.get("occasion") or "").strip() or None
+        style_preference = request.form.getlist("style_preference") or None
+
         conn = db.get_conn()
         with db.dict_cursor(conn) as cur:
             cur.execute(
-                "INSERT INTO profiles (name, chest, waist, hip, skin_hex, undertone, depth, shape, shape_reason, palette_label) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *",
+                "INSERT INTO profiles (name, chest, waist, hip, skin_hex, undertone, depth, shape, shape_reason, "
+                "palette_label, height_cm, fit_preference, occasion, style_preference) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *",
                 (name, chest, waist, hip, skin["hex"], skin["undertone"], skin["depth"],
-                 shape_result["shape"], shape_result["reason"], palette["label"]),
+                 shape_result["shape"], shape_result["reason"], palette["label"],
+                 height_cm, fit_preference, occasion, style_preference),
             )
             row = cur.fetchone()
             conn.commit()
@@ -288,6 +347,14 @@ def refresh_catalog():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+
+@app.route("/api/styles")
+def list_styles():
+    return jsonify([
+        {"key": k, "label": v["label"], "description": v["description"]}
+        for k, v in style_data.STYLES.items()
+    ])
 
 
 @app.route("/api/catalog-status")

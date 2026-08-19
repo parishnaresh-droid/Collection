@@ -39,12 +39,23 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE INDEX IF NOT EXISTS idx_products_color ON products (color_matched);
 """
 
+# Additive migrations for columns introduced after the table already existed in
+# production. ALTER TABLE ... ADD COLUMN IF NOT EXISTS is safe to re-run.
+MIGRATIONS = [
+    "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS height_cm NUMERIC",
+    "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS fit_preference TEXT",
+    "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS occasion TEXT",
+    "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS style_preference TEXT[]",
+]
+
 
 def init_schema():
     conn = get_conn()
     try:
         with conn.cursor() as cur:
             cur.execute(SCHEMA)
+            for stmt in MIGRATIONS:
+                cur.execute(stmt)
         conn.commit()
     finally:
         conn.close()
