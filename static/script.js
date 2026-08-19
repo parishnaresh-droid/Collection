@@ -102,7 +102,12 @@ function outfitCardHtml(o) {
   if (o.real_products && o.real_products.length) {
     rp.innerHTML = o.real_products.map(p => `
       <a class="real-product" href="${p.url}" target="_blank" rel="noopener">
-        <span class="rp-title"><span class="stock-dot ${p.available ? 'in' : 'out'}"></span>${escapeHtml(p.title)}</span>
+        ${p.image_url
+          ? `<img class="rp-thumb" src="${p.image_url}" alt="" loading="lazy">`
+          : `<span class="rp-thumb-placeholder" style="--swatch-color:${o.top_hex}"></span>`}
+        <span class="rp-body">
+          <span class="rp-title"><span class="stock-dot ${p.available ? 'in' : 'out'}"></span>${escapeHtml(p.title)}</span>
+        </span>
         <span class="rp-price">${p.price ? '$' + p.price.toFixed(2) : ''}</span>
       </a>
     `).join('');
@@ -139,11 +144,19 @@ function styleProfileHtml(sp) {
   `;
 }
 
+function paletteBandHtml(outfits) {
+  return `<div class="palette-showcase"><div class="palette-band">${outfits.map(o => `
+    <div class="palette-band-swatch" style="background:${o.top_hex}">
+      <span class="pb-name">${escapeHtml(o.top_color)}</span>
+    </div>
+  `).join('')}</div></div>`;
+}
+
 function renderProfileResult(container, data) {
   container.innerHTML = `
     ${styleProfileHtml(data.style_profile)}
     <div class="result-block">
-      <h2>${escapeHtml(data.name)}'s skin tone</h2>
+      <h2>${escapeHtml(data.name)}'s palette</h2>
       <div class="skin-row">
         <span class="skin-swatch" style="background:${data.skin.hex}"></span>
         <div>
@@ -151,6 +164,7 @@ function renderProfileResult(container, data) {
           <p class="meta">${data.skin.undertone} undertone, ${data.skin.depth} depth</p>
         </div>
       </div>
+      ${paletteBandHtml(data.outfits)}
     </div>
     <div class="result-block">
       <h2>Body shape</h2>

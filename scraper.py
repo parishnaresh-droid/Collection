@@ -67,6 +67,8 @@ def match_products_to_palette(products, domain):
         title = p.get("title", "")
         handle = p.get("handle", "")
         product_url = f"https://{domain}/products/{handle}"
+        images = p.get("images", [])
+        image_url = images[0]["src"] if images else None
         for variant in p.get("variants", []):
             variant_color = (variant.get("option2") or variant.get("option1") or "").lower()
             price = variant.get("price")
@@ -81,6 +83,7 @@ def match_products_to_palette(products, domain):
                         "price": float(price) if price else None,
                         "available": bool(available),
                         "url": product_url,
+                        "image_url": image_url,
                     })
                     break
     return matches
@@ -104,9 +107,9 @@ def refresh_catalog(conn):
         cur.execute("DELETE FROM products")
         for m in all_matches:
             cur.execute(
-                "INSERT INTO products (store, title, color_matched, color_label, price, available, url) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                (m["store"], m["title"], m["color_matched"], m["color_label"], m["price"], m["available"], m["url"]),
+                "INSERT INTO products (store, title, color_matched, color_label, price, available, url, image_url) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                (m["store"], m["title"], m["color_matched"], m["color_label"], m["price"], m["available"], m["url"], m.get("image_url")),
             )
     conn.commit()
     return {"matched": len(all_matches), "stores": SHOPIFY_STORES, "errors": errors}

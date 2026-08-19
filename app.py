@@ -192,7 +192,7 @@ def build_outfits(conn, palette):
         for c in palette["colors"]:
             pairing = PAIRINGS.get(c["name"], DEFAULT_PAIRING)
             cur.execute(
-                "SELECT title, store, price, available, url FROM products "
+                "SELECT title, store, price, available, url, image_url FROM products "
                 "WHERE color_matched = %s ORDER BY available DESC, price ASC NULLS LAST LIMIT 5",
                 (c["name"],),
             )

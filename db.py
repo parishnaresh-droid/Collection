@@ -46,6 +46,7 @@ MIGRATIONS = [
     "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS fit_preference TEXT",
     "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS occasion TEXT",
     "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS style_preference TEXT[]",
+    "ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT",
 ]
 
 
