@@ -13,69 +13,92 @@
   <header class="intro">
     <p class="eyebrow">a fitting card, made from a photo</p>
     <h1>Find your palette, then your fit</h1>
-    <p class="sub">Upload a photo and three measurements. Get a real color read from your skin tone, a body-shape classification from actual ratio math, and which fits and colors work together &mdash; and which don't.</p>
+    <p class="sub">Real skin-tone extraction, real ratio-based body shape math, and a live product catalog pulled from actual stores &mdash; not a mockup.</p>
   </header>
 
-  <section class="card form-card">
-    <form id="analyze-form">
-      <div class="field">
-        <label for="photo">Photo (front-facing, even lighting)</label>
-        <input type="file" id="photo" name="photo" accept="image/*" required>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-view="new" role="tab" aria-selected="true">New reading</button>
+    <button class="tab" data-view="saved" role="tab" aria-selected="false">Saved <span id="saved-count" class="tab-count"></span></button>
+    <button class="tab" data-view="compare" role="tab" aria-selected="false">Compare</button>
+  </nav>
+
+  <!-- NEW READING -->
+  <section class="view" id="view-new">
+    <div class="card form-card">
+      <form id="analyze-form">
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" placeholder="Whose photo is this?" required>
+        </div>
+        <div class="field">
+          <label for="photo">Photo (front-facing, even lighting)</label>
+          <input type="file" id="photo" name="photo" accept="image/*" required>
+        </div>
+        <div class="measurements">
+          <div class="field">
+            <label for="chest">Chest / bust (cm)</label>
+            <input type="number" id="chest" name="chest" min="50" max="200" step="0.5" required>
+          </div>
+          <div class="field">
+            <label for="waist">Waist (cm)</label>
+            <input type="number" id="waist" name="waist" min="40" max="200" step="0.5" required>
+          </div>
+          <div class="field">
+            <label for="hip">Hip (cm)</label>
+            <input type="number" id="hip" name="hip" min="50" max="200" step="0.5" required>
+          </div>
+        </div>
+        <button type="submit" id="submit-btn">Read my fit</button>
+        <p class="error" id="error-msg"></p>
+      </form>
+    </div>
+
+    <div class="card catalog-bar">
+      <div>
+        <p class="catalog-label">Live product catalog</p>
+        <p class="meta" id="catalog-meta">Checking...</p>
       </div>
-      <div class="measurements">
-        <div class="field">
-          <label for="chest">Chest / bust (cm)</label>
-          <input type="number" id="chest" name="chest" min="50" max="200" step="0.5" required>
-        </div>
-        <div class="field">
-          <label for="waist">Waist (cm)</label>
-          <input type="number" id="waist" name="waist" min="40" max="200" step="0.5" required>
-        </div>
-        <div class="field">
-          <label for="hip">Hip (cm)</label>
-          <input type="number" id="hip" name="hip" min="50" max="200" step="0.5" required>
-        </div>
-      </div>
-      <button type="submit" id="submit-btn">Read my fit</button>
-      <p class="error" id="error-msg"></p>
-    </form>
+      <button id="refresh-catalog-btn" class="secondary-btn">Check real stock</button>
+    </div>
+
+    <section class="card results" id="results" hidden></section>
   </section>
 
-  <section class="card results" id="results" hidden>
-    <div class="result-block">
-      <h2>Skin tone</h2>
-      <div class="skin-row">
-        <span class="skin-swatch" id="skin-swatch"></span>
-        <div>
-          <p class="hex" id="skin-hex"></p>
-          <p class="meta" id="skin-meta"></p>
-        </div>
-      </div>
+  <!-- SAVED -->
+  <section class="view" id="view-saved" hidden>
+    <div class="card">
+      <h2>Saved readings</h2>
+      <div id="saved-list" class="profile-grid"></div>
+      <p class="empty-state" id="saved-empty" hidden>No readings yet &mdash; run one under &ldquo;New reading&rdquo; and it'll show up here.</p>
     </div>
+  </section>
 
-    <div class="result-block">
-      <h2>Body shape</h2>
-      <p class="shape-name" id="shape-name"></p>
-      <p class="meta" id="shape-reason"></p>
-      <div class="works-avoid">
-        <div>
-          <p class="label works">Works</p>
-          <ul id="works-list"></ul>
-        </div>
-        <div>
-          <p class="label avoid">Avoid</p>
-          <ul id="avoid-list"></ul>
-        </div>
+  <!-- COMPARE -->
+  <section class="view" id="view-compare" hidden>
+    <div class="card">
+      <h2>Compare two readings</h2>
+      <div class="compare-pickers">
+        <select id="compare-a"><option value="">Choose a person...</option></select>
+        <span class="vs">vs</span>
+        <select id="compare-b"><option value="">Choose a person...</option></select>
       </div>
-    </div>
-
-    <div class="result-block">
-      <h2>Your outfits</h2>
-      <p class="meta" id="palette-label"></p>
-      <div class="fan-deck" id="outfit-cards"></div>
+      <p class="empty-state" id="compare-empty">Pick two saved readings to see them side by side.</p>
+      <div id="compare-result" class="compare-grid" hidden></div>
     </div>
   </section>
 </main>
+
+<template id="outfit-card-template">
+  <div class="outfit-card">
+    <div class="outfit-head">
+      <span class="outfit-swatch"></span>
+      <span class="top-color"></span>
+    </div>
+    <p class="pairing"></p>
+    <div class="real-products"></div>
+  </div>
+</template>
+
 <script src="/static/script.js"></script>
 </body>
 </html>
