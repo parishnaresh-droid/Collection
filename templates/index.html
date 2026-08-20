@@ -12,25 +12,29 @@
 <div class="crop-mark tl" aria-hidden="true"></div>
 <div class="crop-mark tr" aria-hidden="true"></div>
 
-<main>
-  <header class="hero">
-    <div class="hero-text">
-      <p class="eyebrow">No. 001 &middot; issued from a photo</p>
-      <h1>Find your palette,<br>then your fit.</h1>
-      <p class="sub">Real skin-tone extraction. Real ratio-based body-shape math. A live product catalog pulled from actual stores. Every swatch on this page is a genuine reading &mdash; not a mockup.</p>
-    </div>
-    <div class="hero-showcase">
-      <div class="hero-swatches" id="hero-swatches" aria-hidden="true">
-        <div class="swatch-tag st-1" style="--tag-color:#7B2D26"><span class="tag-name">burgundy</span></div>
-        <div class="swatch-tag st-2" style="--tag-color:#556B2F"><span class="tag-name">olive</span></div>
-        <div class="swatch-tag st-3" style="--tag-color:#C1502E"><span class="tag-name">rust</span></div>
-        <div class="swatch-tag st-4" style="--tag-color:#C99A2E"><span class="tag-name">mustard</span></div>
-      </div>
-      <p class="showcase-caption">Sample palette &mdash; yours renders here after your first reading</p>
-    </div>
-  </header>
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="brand"><span class="brand-dot"></span>Palette &amp; Fit</span>
+    <span class="mono" style="font-size:0.7rem;letter-spacing:0.12em;color:var(--ink-faint);text-transform:uppercase">CIE L*a*b* &middot; &Delta;E 2000</span>
+  </div>
+</header>
 
-  <nav class="tabs" role="tablist">
+<main>
+  <div class="shell">
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Find your palette,<br><em>then your fit.</em></h1>
+    </div>
+    <div>
+      <p class="sub">Skin tone measured in CIE L*a*b*. Body shape from real ratio maths. Outfits paired by perceptual colour distance &mdash; then rendered in 3D.</p>
+      <dl class="hero-meta">
+        <div><dt>Colour</dt><dd>CIEDE2000</dd></div>
+        <div><dt>Shapes</dt><dd>5 classified</dd></div>
+        <div><dt>Output</dt><dd>3D fitting room</dd></div>
+      </dl>
+    </div>
+  </section>
+<nav class="tabs" role="tablist">
     <button class="tab active" data-view="new" role="tab" aria-selected="true">New reading</button>
     <button class="tab" data-view="saved" role="tab" aria-selected="false">Saved <span id="saved-count" class="tab-count"></span></button>
     <button class="tab" data-view="compare" role="tab" aria-selected="false">Compare</button>
@@ -154,6 +158,7 @@
       <div id="compare-result" class="compare-grid" hidden></div>
     </div>
   </section>
+  </div>
 </main>
 
 <template id="outfit-card-template">
@@ -167,7 +172,7 @@
   </div>
 </template>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/static/three.min.js"></script>
 <script src="/static/mannequin.js"></script>
 <script src="/static/flatlay.js"></script>
 <script src="/static/script.js"></script>

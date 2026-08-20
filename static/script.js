@@ -157,13 +157,19 @@ function renderProfileResult(container, data) {
   container.innerHTML = `
     ${styleProfileHtml(data.style_profile)}
     ${combos.length ? showroomHtml(combos) : ''}
-    ${combos.length ? `<div class="result-block">
-      <h2>Every look, flat</h2>
+    ${combos.length ? `<div class="result-block chapter">
+      <div class="chapter-head"><span class="chapter-num">Ch. 02</span><div>
+        <h2 class="chapter-title">Every look, flat</h2>
+        <p class="chapter-lede">The same combinations laid out as garments, so you can scan colour relationships at a glance.</p>
+      </div></div>
       <p class="meta">Every pairing chosen by measured colour distance, not guesswork.</p>
       <div class="combo-grid">${combos.map((c,i)=>comboCardHtml(c,i)).join('')}</div>
     </div>` : ''}
-    <div class="result-block">
-      <h2>${escapeHtml(data.name)}'s palette</h2>
+    <div class="result-block chapter">
+      <div class="chapter-head"><span class="chapter-num">Ch. 03</span><div>
+        <h2 class="chapter-title">${escapeHtml(data.name)}&rsquo;s palette</h2>
+        <p class="chapter-lede">Sampled from your photo, converted to CIE L*a*b*, matched against a 70-colour reference set.</p>
+      </div></div>
       <div class="skin-row">
         <span class="skin-swatch" style="background:${data.skin.hex}"></span>
         <div>
@@ -179,8 +185,11 @@ function renderProfileResult(container, data) {
       </div>
       ${paletteBandHtml(data.outfits)}
     </div>
-    <div class="result-block">
-      <h2>Body shape</h2>
+    <div class="result-block chapter">
+      <div class="chapter-head"><span class="chapter-num">Ch. 04</span><div>
+        <h2 class="chapter-title">Body shape</h2>
+        <p class="chapter-lede">Classified from chest, waist and hip ratios &mdash; the same measurements a tailor takes.</p>
+      </div></div>
       <p class="shape-name">${data.shape.shape}</p>
       <p class="meta">${data.shape.reason}</p>
       <div class="works-avoid">
@@ -188,8 +197,10 @@ function renderProfileResult(container, data) {
         <div><p class="label avoid">Avoid</p><ul>${data.style_avoid.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul></div>
       </div>
     </div>
-    <div class="result-block">
-      <h2>All outfit options</h2>
+    <div class="result-block chapter">
+      <div class="chapter-head"><span class="chapter-num">Ch. 05</span><div>
+        <h2 class="chapter-title">All outfit options</h2>
+      </div></div>
       <p class="meta">Palette match: ${data.palette_label}</p>
       <div class="fan-deck" id="outfit-cards-${data.id}"></div>
     </div>
@@ -373,6 +384,7 @@ function finishAnalysingAnimation() {
 // ---------- 3D showroom ----------
 function showroomHtml(combos) {
   return `
+  <div class="chapter-head" style="margin-top:36px"><span class="chapter-num">Ch. 01</span><div><h2 class="chapter-title">The fitting room</h2><p class="chapter-lede">Your looks rendered in real 3D. Drag the model to rotate.</p></div></div>
   <section class="showroom" id="showroom">
     <div class="stage" id="stage">
       <div class="stage-fallback" id="stage-fallback">Preparing the 3D fitting room\u2026</div>
@@ -405,13 +417,18 @@ function initShowroom(combos) {
   if (!stage) return;
 
   const boot = () => {
-    const ok = Mannequin.init(stage);
-    if (ok === false || typeof THREE === 'undefined') {
-      fallback.textContent = 'Your browser could not start 3D rendering \u2014 the flat views below show every look.';
-      return;
+    try {
+      const ok = Mannequin.init(stage);
+      if (ok === false || typeof THREE === 'undefined') {
+        fallback.textContent = 'Your browser could not start 3D rendering \u2014 the flat views below show every look.';
+        return;
+      }
+      if (fallback) fallback.remove();
+      Mannequin.setOutfit(combos[0]);
+    } catch (err) {
+      console.error('3D fitting room failed:', err);
+      fallback.textContent = '3D unavailable (' + (err && err.message ? err.message : 'unknown') + ') \u2014 flat views below show every look.';
     }
-    if (fallback) fallback.remove();
-    Mannequin.setOutfit(combos[0]);
   };
 
   if (typeof THREE === 'undefined') {
