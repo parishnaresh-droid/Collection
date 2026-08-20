@@ -6,7 +6,7 @@
    All geometry authored here — no external model assets.
    ============================================================ */
 
-const Mannequin = (() => {
+window.Mannequin = (function () {
   let scene, camera, renderer, root, clock;
   let garments = {};           // { top, bottom, shoes, layer }
   let autoRotate = true;
@@ -14,12 +14,12 @@ const Mannequin = (() => {
   let mounted = false;
   let rafId = null;
 
-  const SKIN = 0xD8C3AE;
+  const SKIN = 0xD6D6DA;   // neutral studio mannequin grey
 
   function makeMannequin() {
     const g = new THREE.Group();
     const skinMat = new THREE.MeshStandardMaterial({
-      color: SKIN, roughness: 0.82, metalness: 0.02,
+      color: SKIN, roughness: 0.62, metalness: 0.06,
     });
 
     // head
@@ -152,7 +152,7 @@ const Mannequin = (() => {
     const mat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(hex), roughness: 0.55, metalness: 0.05,
     });
-    const soleMat = new THREE.MeshStandardMaterial({ color: 0xF2F0EA, roughness: 0.7 });
+    const soleMat = new THREE.MeshStandardMaterial({ color: 0xE8E8EC, roughness: 0.7 });
 
     [-1, 1].forEach(side => {
       const upper = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.20, 0.56), mat);
@@ -192,11 +192,25 @@ const Mannequin = (() => {
   // ---------- public API ----------
 
   function init(container) {
-    if (mounted) return;
     if (typeof THREE === 'undefined') return false;
 
     const w = container.clientWidth || 380;
     const h = container.clientHeight || 460;
+
+    // Re-entrant: on a second render the old #stage node is gone, so the
+    // existing canvas is orphaned. Re-attach it to the new container
+    // instead of bailing out (which left the stage permanently blank).
+    if (mounted && renderer) {
+      if (renderer.domElement.parentNode !== container) {
+        container.appendChild(renderer.domElement);
+      }
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      attachDrag(container);
+      if (!rafId) animate();
+      return true;
+    }
 
     scene = new THREE.Scene();
     scene.background = null;
@@ -228,7 +242,7 @@ const Mannequin = (() => {
     fill.position.set(-4.2, 2.4, 2.8);
     scene.add(fill);
 
-    const rim = new THREE.DirectionalLight(0xFFF4E2, 0.62);
+    const rim = new THREE.DirectionalLight(0xFFFFFF, 0.7);
     rim.position.set(-1.4, 3.2, -5.2);
     scene.add(rim);
 
@@ -325,5 +339,20 @@ const Mannequin = (() => {
 
   function resumeAutoRotate() { autoRotate = true; }
 
-  return { init, setOutfit, resumeAutoRotate };
+  /** Tear down so a new reading can mount a fresh stage. */
+  function reset() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    if (renderer) {
+      renderer.dispose();
+      if (renderer.domElement && renderer.domElement.parentNode)
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+    }
+    scene = camera = renderer = root = null;
+    garments = {};
+    mounted = false;
+    targetY = 0; velocity = 0; autoRotate = true;
+  }
+
+  return { init, setOutfit, resumeAutoRotate, reset };
 })();

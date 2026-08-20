@@ -152,11 +152,11 @@ function paletteBandHtml(outfits) {
   `).join('')}</div></div>`;
 }
 
-function renderProfileResult(container, data) {
+function renderProfileResult(container, data, isCompare) {
   const combos = (data.style_profile && data.style_profile.combos) || [];
   container.innerHTML = `
     ${styleProfileHtml(data.style_profile)}
-    ${combos.length ? showroomHtml(combos) : ''}
+    ${combos.length && !isCompare ? showroomHtml(combos) : ''}
     ${combos.length ? `<div class="result-block chapter">
       <div class="chapter-head"><span class="chapter-num">Ch. 02</span><div>
         <h2 class="chapter-title">Every look, flat</h2>
@@ -207,7 +207,7 @@ function renderProfileResult(container, data) {
   `;
   const deck = container.querySelector(`#outfit-cards-${data.id}`);
   data.outfits.forEach(o => deck.appendChild(outfitCardHtml(o)));
-  if (combos.length) initShowroom(combos);
+  if (combos.length) initShowroom(combos, container);
 }
 
 // ---------- form submit ----------
@@ -302,13 +302,13 @@ async function loadSavedProfiles() {
   list.querySelectorAll('.profile-card').forEach(el => el.addEventListener('click', async () => {
     const res = await fetch(`/api/profiles/${el.dataset.id}`);
     const data = await res.json();
-    const container = document.createElement('div');
-    container.className = 'card';
-    renderProfileResult(container, data);
     const existing = document.getElementById('profile-detail');
     if (existing) existing.remove();
+    const container = document.createElement('div');
+    container.className = 'card';
     container.id = 'profile-detail';
     document.getElementById('view-saved').appendChild(container);
+    renderProfileResult(container, data);
     container.scrollIntoView({ behavior: 'smooth' });
   }));
 }
@@ -334,8 +334,8 @@ async function tryCompare() {
   empty.hidden = true;
   resultEl.hidden = false;
   resultEl.innerHTML = '<div class="compare-col" id="compare-col-a"></div><div class="compare-col" id="compare-col-b"></div>';
-  renderProfileResult(document.getElementById('compare-col-a'), data.a);
-  renderProfileResult(document.getElementById('compare-col-b'), data.b);
+  renderProfileResult(document.getElementById('compare-col-a'), data.a, true);
+  renderProfileResult(document.getElementById('compare-col-b'), data.b, true);
 }
 
 document.getElementById('compare-a').addEventListener('change', tryCompare);
@@ -411,20 +411,22 @@ function showroomHtml(combos) {
   </section>`;
 }
 
-function initShowroom(combos) {
-  const stage = document.getElementById('stage');
-  const fallback = document.getElementById('stage-fallback');
+function initShowroom(combos, scope) {
+  const rootEl = scope || document;
+  const stage = rootEl.querySelector('.stage');
+  const fallback = rootEl.querySelector('.stage-fallback');
   if (!stage) return;
 
   const boot = () => {
     try {
-      const ok = Mannequin.init(stage);
+      if (window.Mannequin && window.Mannequin.reset) window.Mannequin.reset();
+      const ok = window.Mannequin.init(stage);
       if (ok === false || typeof THREE === 'undefined') {
         fallback.textContent = 'Your browser could not start 3D rendering \u2014 the flat views below show every look.';
         return;
       }
       if (fallback) fallback.remove();
-      Mannequin.setOutfit(combos[0]);
+      window.Mannequin.setOutfit(combos[0]);
     } catch (err) {
       console.error('3D fitting room failed:', err);
       fallback.textContent = '3D unavailable (' + (err && err.message ? err.message : 'unknown') + ') \u2014 flat views below show every look.';
@@ -444,15 +446,17 @@ function initShowroom(combos) {
     }, 100);
   } else boot();
 
-  document.getElementById('look-switcher').addEventListener('click', e => {
+  const switcher = rootEl.querySelector('.look-switcher');
+  if (!switcher) return;
+  switcher.addEventListener('click', e => {
     const btn = e.target.closest('.look-btn');
     if (!btn) return;
     const idx = Number(btn.dataset.look);
-    document.querySelectorAll('.look-btn').forEach(b => b.classList.remove('active'));
+    switcher.querySelectorAll('.look-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    Mannequin.setOutfit(combos[idx]);
-    Mannequin.resumeAutoRotate();
-    const why = document.getElementById('showroom-why');
+    window.Mannequin.setOutfit(combos[idx]);
+    window.Mannequin.resumeAutoRotate();
+    const why = rootEl.querySelector('.showroom-why');
     why.style.animation = 'none'; void why.offsetWidth; why.style.animation = '';
     why.textContent = combos[idx].why;
   });

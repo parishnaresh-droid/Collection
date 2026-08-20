@@ -534,3 +534,182 @@ main { max-width: none; padding: 0; }
 .form-card, .catalog-bar { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 26px; box-shadow: 0 1px 2px rgba(20,17,13,0.04), 0 14px 36px rgba(20,17,13,0.055); }
 .catalog-bar { padding: 16px 22px; }
 .results { background: none; }
+
+/* ============================================================
+   v10 — premium monochrome
+   White / near-black / one restrained accent. The palette colours
+   the app *derives* are the only saturated things on the page.
+   ============================================================ */
+:root {
+  --paper: #FFFFFF;
+  --surface: #F7F7F8;
+  --ink: #0A0A0B;
+  --ink-soft: #52525B;
+  --ink-faint: #9394A1;
+  --line: #E7E7EA;
+  --line-strong: #C9CACF;
+  --accent: #0A0A0B;
+  --brass: #71717A;
+  --works: #15803D;
+  --avoid: #B91C1C;
+}
+
+body { background: var(--paper); color: var(--ink); }
+
+.topbar { background: rgba(255,255,255,0.86); border-bottom: 1px solid var(--line); }
+.brand-dot {
+  background: #0A0A0B;
+  box-shadow: inset 0 0 0 1.5px #fff, 0 0 0 1px #0A0A0B;
+}
+
+/* hero: monochrome, accent only in the italic */
+.hero h1 { color: var(--ink); }
+.hero h1 em {
+  background: none; color: var(--ink-faint); -webkit-text-fill-color: currentColor;
+  font-weight: 300;
+}
+.eyebrow, .showroom-eyebrow { color: var(--ink-faint); }
+.chapter { border-top: 1px solid var(--line); }
+
+/* forms */
+.form-card, .catalog-bar {
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(10,10,11,0.04), 0 12px 34px rgba(10,10,11,0.05);
+}
+.field input, select { background: #fff; border: 1px solid var(--line-strong); border-radius: 8px; }
+.field input:focus, select:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+button { background: var(--ink); color: #fff; border-radius: 8px; }
+button:hover:not(:disabled) { background: #26262B; }
+.secondary-btn { background: #fff; border: 1px solid var(--line-strong); color: var(--ink); }
+.secondary-btn:hover:not(:disabled) { background: var(--surface); }
+.pill { background: #fff; border: 1px solid var(--line-strong); }
+.pill.selected { background: var(--ink); border-color: var(--ink); color: #fff; }
+.style-card { background: #fff; border: 1px solid var(--line); }
+.style-card.selected { border-color: var(--ink); background: var(--surface); box-shadow: inset 0 0 0 1px var(--ink); }
+.wp-step.active { color: var(--ink); border-color: var(--ink); }
+.wp-step.done { color: var(--ink-faint); border-color: var(--line-strong); }
+.tab.active { border-bottom-color: var(--ink); }
+.tab-count { background: var(--surface); border: 1px solid var(--line); }
+
+/* showroom: true near-black studio, not brown */
+.showroom {
+  background: linear-gradient(168deg, #0C0C0E 0%, #131316 58%, #0A0A0C 100%);
+  box-shadow: 0 30px 70px rgba(10,10,11,0.28);
+}
+.stage {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 93%, rgba(0,0,0,0.5), transparent 72%),
+    radial-gradient(ellipse 78% 60% at 50% 32%, rgba(255,255,255,0.085), transparent 74%);
+}
+.showroom-title { color: #fff; }
+.showroom-sub { color: rgba(255,255,255,0.55); }
+.showroom-why { color: rgba(255,255,255,0.74); border-top-color: rgba(255,255,255,0.12); }
+.look-btn { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+.look-btn.active { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.55); }
+
+/* palette showcase: neutral dark, colours do the talking */
+.palette-showcase { background: #0C0C0E; box-shadow: 0 18px 40px rgba(10,10,11,0.16); }
+
+/* outfit rows: light, not brown */
+.outfit-card {
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(10,10,11,0.03);
+}
+.outfit-card:hover { box-shadow: 0 14px 30px rgba(10,10,11,0.08); }
+.top-color { color: var(--ink); }
+.pairing { color: var(--ink-soft); }
+.real-product { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.real-product:hover { background: var(--surface); }
+.no-real-products { color: var(--ink-faint); }
+.combo-card { background: #fff; border: 1px solid var(--line); }
+.flatlay { background: var(--surface); border-color: var(--line); }
+
+/* ============================================================
+   v10 — monochrome premium palette
+   Interface goes black / white / cool grey. The only colour on the
+   page is the user's own derived palette — which is the point.
+   ============================================================ */
+:root {
+  --paper: #FFFFFF;
+  --surface: #F7F7F8;
+  --surface-2: #F0F0F2;
+  --line: #E4E4E7;
+  --line-strong: #C9C9CF;
+  --ink: #09090B;
+  --ink-soft: #52525B;
+  --ink-faint: #A1A1AA;
+  --accent: #09090B;
+  --stage-bg-1: #0A0A0B;
+  --stage-bg-2: #141416;
+}
+
+body { background: var(--paper); color: var(--ink); }
+
+.topbar { background: rgba(255,255,255,0.85); border-bottom: 1px solid var(--line); }
+.brand-dot { background: #09090B; }
+.brand { letter-spacing: -0.03em; }
+
+/* hero: pure black type, no warm gradient */
+.hero h1 { color: var(--ink); }
+.hero h1 em {
+  background: none; -webkit-background-clip: initial; background-clip: initial;
+  color: var(--ink-faint); font-style: italic; font-weight: 300;
+}
+.eyebrow, .showroom-eyebrow, .chapter-num { color: var(--ink-faint); }
+
+.chapter { border-top: 1px solid var(--line); }
+.form-card, .catalog-bar {
+  background: #fff; border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(9,9,11,0.04), 0 12px 32px rgba(9,9,11,0.05);
+}
+
+button { background: var(--ink); color: #fff; }
+button:hover:not(:disabled) { background: #27272A; }
+.secondary-btn { background: #fff; border: 1px solid var(--line-strong); color: var(--ink); }
+.secondary-btn:hover:not(:disabled) { background: var(--surface); }
+.pill { background: #fff; border-color: var(--line-strong); }
+.pill.selected { background: var(--ink); border-color: var(--ink); color: #fff; }
+.tab.active { border-bottom-color: var(--ink); }
+.tab-count { background: var(--surface-2); }
+.field input, select { background: var(--surface); border-color: var(--line); }
+.field input:focus, select:focus { outline-color: var(--ink); }
+.wp-step.active { color: var(--ink); border-color: var(--ink); }
+.wp-step.done { color: var(--ink-soft); border-color: var(--line-strong); }
+.style-card.selected { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--ink); border-color: var(--ink); }
+.style-card:hover { border-color: var(--ink); }
+
+/* showroom: true black studio */
+.showroom {
+  background: linear-gradient(168deg, var(--stage-bg-1) 0%, var(--stage-bg-2) 100%);
+  box-shadow: 0 30px 70px rgba(9,9,11,0.28);
+}
+.showroom-eyebrow { color: #A1A1AA; }
+.stage {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 93%, rgba(0,0,0,0.55), transparent 70%),
+    radial-gradient(ellipse 78% 60% at 50% 32%, rgba(255,255,255,0.06), transparent 72%);
+}
+
+/* palette showcase: black case, colour is the only accent */
+.palette-showcase { background: #09090B; box-shadow: 0 18px 40px rgba(9,9,11,0.18); }
+
+/* outfit rows: light, not brown */
+.outfit-card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-left: 3px solid var(--swatch-color, var(--ink));
+  box-shadow: none;
+}
+.outfit-card:hover { box-shadow: 0 12px 28px rgba(9,9,11,0.08); }
+.top-color { color: var(--ink); }
+.pairing { color: var(--ink-soft); }
+.real-product { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.real-product:hover { background: var(--surface-2); }
+.no-real-products { color: var(--ink-faint); }
+.stock-dot.in { background: #16A34A; }
+.stock-dot.out { background: #DC2626; }
+
+.combo-card { background: #fff; border: 1px solid var(--line); border-top: 2px solid var(--combo-accent); }
+.flatlay { background: var(--surface); border-color: var(--line); }
+.analysing-ring { border-color: var(--line); border-top-color: var(--ink); }
+.label.works { color: #15803D; }
+.label.avoid { color: #B91C1C; }
