@@ -153,15 +153,27 @@ function paletteBandHtml(outfits) {
 }
 
 function renderProfileResult(container, data) {
+  const combos = (data.style_profile && data.style_profile.combos) || [];
   container.innerHTML = `
     ${styleProfileHtml(data.style_profile)}
+    ${combos.length ? `<div class="result-block">
+      <h2>Complete looks</h2>
+      <p class="meta">Every pairing chosen by measured colour distance, not guesswork.</p>
+      <div class="combo-grid">${combos.map((c,i)=>comboCardHtml(c,i)).join('')}</div>
+    </div>` : ''}
     <div class="result-block">
       <h2>${escapeHtml(data.name)}'s palette</h2>
       <div class="skin-row">
         <span class="skin-swatch" style="background:${data.skin.hex}"></span>
         <div>
           <p class="hex mono">${data.skin.hex}</p>
-          <p class="meta">${data.skin.undertone} undertone, ${data.skin.depth} depth</p>
+          <p class="meta">${data.skin.undertone} undertone &middot; ${data.skin.depth} depth${data.skin.nearest_name ? ` &middot; closest named colour: ${escapeHtml(data.skin.nearest_name)}` : ''}</p>
+          ${data.skin.lab ? `<dl class="lab-readout">
+            <div class="lab-item"><dt>L*</dt><dd>${data.skin.lab.L}</dd></div>
+            <div class="lab-item"><dt>a*</dt><dd>${data.skin.lab.a}</dd></div>
+            <div class="lab-item"><dt>b*</dt><dd>${data.skin.lab.b}</dd></div>
+            ${data.skin.nearest_delta_e !== undefined ? `<div class="lab-item"><dt>&Delta;E</dt><dd>${data.skin.nearest_delta_e}</dd></div>` : ''}
+          </dl>` : ''}
         </div>
       </div>
       ${paletteBandHtml(data.outfits)}
@@ -196,12 +208,14 @@ form.addEventListener('submit', async (e) => {
   errorMsg.textContent = '';
   submitBtn.disabled = true;
   submitBtn.textContent = 'Reading...';
+  startAnalysingAnimation();
   try {
     const fd = new FormData(form);
     selectedStyles.forEach(k => fd.append('style_preference', k));
     const res = await fetch('/api/analyze', { method: 'POST', body: fd });
     const data = await res.json();
     if (!res.ok) { errorMsg.textContent = data.error || 'Something went wrong'; return; }
+    await finishAnalysingAnimation();
     renderProfileResult(results, data);
     results.hidden = false;
     results.scrollIntoView({ behavior: 'smooth' });
@@ -315,3 +329,40 @@ document.getElementById('compare-a').addEventListener('change', tryCompare);
 document.getElementById('compare-b').addEventListener('change', tryCompare);
 
 refreshSavedCount();
+
+
+// ---------- analysis transition ----------
+const ANALYSIS_STEPS = [
+  'Detecting face region\u2026',
+  'Sampling skin pixels\u2026',
+  'Converting to CIE L*a*b*\u2026',
+  'Matching palette by \u0394E\u2026',
+  'Building your looks\u2026',
+];
+let analysisTimer = null;
+
+function startAnalysingAnimation() {
+  const results = document.getElementById('results');
+  results.hidden = false;
+  results.innerHTML = `<div class="analysing">
+      <div class="analysing-ring"></div>
+      <p class="analysing-step" id="analysing-step">${ANALYSIS_STEPS[0]}</p>
+    </div>`;
+  results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  let i = 0;
+  analysisTimer = setInterval(() => {
+    i = (i + 1) % ANALYSIS_STEPS.length;
+    const el = document.getElementById('analysing-step');
+    if (el) {
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+      el.textContent = ANALYSIS_STEPS[i];
+    }
+  }, 620);
+}
+
+function finishAnalysingAnimation() {
+  if (analysisTimer) { clearInterval(analysisTimer); analysisTimer = null; }
+  return new Promise(r => setTimeout(r, 260));
+}

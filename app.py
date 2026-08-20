@@ -8,6 +8,8 @@ from flask import Flask, request, jsonify, render_template
 import db
 import scraper
 import styles as style_data
+import colour
+import outfits as outfit_engine
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -51,28 +53,35 @@ def extract_skin_tone(image_bytes):
     r, g, b = int(r), int(g), int(b)
 
     h_, s_, v_ = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-    hue_deg = h_ * 360
-    yellow_red_skew = r - b
-    if yellow_red_skew > 25 and 15 <= hue_deg <= 50:
-        undertone = "warm"
-    elif yellow_red_skew < 10:
-        undertone = "cool"
-    else:
-        undertone = "neutral"
-
-    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-    depth = "deep" if luminance < 0.5 else "light"
+    undertone, L, a_star, b_star = colour.classify_undertone(r, g, b)
+    depth, _ = colour.classify_depth(r, g, b)
+    nearest = colour.nearest_colour_name(r, g, b)
 
     return {
-        "hex": f"#{r:02X}{g:02X}{b:02X}",
+        "hex": colour.rgb_to_hex(r, g, b),
         "rgb": [r, g, b],
         "undertone": undertone,
         "depth": depth,
+        "lab": {"L": round(L, 2), "a": round(a_star, 2), "b": round(b_star, 2)},
+        "nearest_name": nearest["name"],
+        "nearest_delta_e": nearest["delta_e"],
         "pixels_sampled": int(len(bgr_pixels)),
     }
 
 
 PALETTES = {
+    ("warm", "medium"): {"label": "true autumn", "colors": [
+        {"name": "rust", "hex": "#C1502E"}, {"name": "olive", "hex": "#556B2F"},
+        {"name": "mustard", "hex": "#C99A2E"}, {"name": "terracotta", "hex": "#B85C38"},
+        {"name": "camel", "hex": "#C19A6B"}, {"name": "deep teal", "hex": "#1B4D4A"}]},
+    ("cool", "medium"): {"label": "true winter", "colors": [
+        {"name": "emerald", "hex": "#0F6B4E"}, {"name": "sapphire", "hex": "#1B4F91"},
+        {"name": "true red", "hex": "#B0201E"}, {"name": "charcoal", "hex": "#36454F"},
+        {"name": "plum", "hex": "#8E4585"}, {"name": "navy", "hex": "#2C3A4F"}]},
+    ("neutral", "medium"): {"label": "soft neutral", "colors": [
+        {"name": "taupe", "hex": "#8A7A6B"}, {"name": "dusty rose", "hex": "#C4A0A0"},
+        {"name": "sage", "hex": "#9CAF88", }, {"name": "stone", "hex": "#ADA587"},
+        {"name": "navy", "hex": "#2C3A4F"}, {"name": "cognac", "hex": "#9A463D"}]},
     ("warm", "deep"): {"label": "deep autumn", "colors": [
         {"name": "rust", "hex": "#C1502E"}, {"name": "olive", "hex": "#556B2F"},
         {"name": "mustard", "hex": "#C99A2E"}, {"name": "burgundy", "hex": "#7B2D26"},
@@ -144,6 +153,27 @@ STYLE_GUIDANCE = {
 }
 
 
+def auto_select_style(shape, fit_preference, occasion):
+    """The app picks the style rather than making the user choose.
+    Grounded in the body-shape research: certain silhouettes genuinely suit
+    certain builds better."""
+    shape_name = shape["shape"]
+    if occasion in ("work", "dinner", "formal event"):
+        return "smart_casual" if shape_name != "oval / round" else "minimal"
+    if fit_preference in ("oversized", "baggy"):
+        return "streetwear" if shape_name == "rectangle" else "90s_relaxed"
+    if fit_preference == "slim":
+        return "minimal"
+    defaults = {
+        "rectangle": "90s_relaxed",
+        "inverted triangle / trapezoid": "minimal",
+        "triangle / pear": "workwear",
+        "oval / round": "minimal",
+        "hourglass": "smart_casual",
+    }
+    return defaults.get(shape_name, "smart_casual")
+
+
 def build_style_profile(palette, shape, style_prefs, occasion, fit_preference, height_cm):
     style_prefs = style_prefs or []
     chosen_key = None
@@ -155,7 +185,7 @@ def build_style_profile(palette, shape, style_prefs, occasion, fit_preference, h
                 chosen_key = key
                 break
     if not chosen_key or chosen_key not in style_data.STYLES:
-        chosen_key = "smart_casual"
+        chosen_key = auto_select_style(shape, fit_preference, occasion)
 
     style = style_data.STYLES[chosen_key]
     top_color = palette["colors"][0]
@@ -183,6 +213,7 @@ def build_style_profile(palette, shape, style_prefs, occasion, fit_preference, h
         "shoes": {"garment": style["shoes"][0]},
         "layer": style["tops"][-1] if len(style["tops"]) > 1 else None,
         "why": " ".join(why_parts),
+        "combos": outfit_engine.build_combos(palette, shape["shape"], style, fit_preference, height_cm),
     }
 
 
@@ -213,13 +244,21 @@ def profile_to_response(conn, row):
     guidance = STYLE_GUIDANCE[row["shape"]]
     outfits = build_outfits(conn, palette)
     shape_dict = {"shape": row["shape"], "reason": row["shape_reason"]}
+    _r, _g, _b = colour.hex_to_rgb(row["skin_hex"])
+    _nearest = colour.nearest_colour_name(_r, _g, _b)
+    _L, _a, _bb = colour.rgb_to_lab(_r, _g, _b)
+    skin = {
+        "hex": row["skin_hex"], "undertone": row["undertone"], "depth": row["depth"],
+        "nearest_name": _nearest["name"], "nearest_delta_e": _nearest["delta_e"],
+        "lab": {"L": round(_L, 2), "a": round(_a, 2), "b": round(_bb, 2)},
+    }
     style_profile = build_style_profile(
         palette, shape_dict, row.get("style_preference"), row.get("occasion"),
         row.get("fit_preference"), row.get("height_cm"),
     )
     return {
         "id": row["id"], "name": row["name"], "created_at": row["created_at"].isoformat(),
-        "skin": {"hex": row["skin_hex"], "undertone": row["undertone"], "depth": row["depth"]},
+        "skin": skin,
         "shape": shape_dict,
         "style_works": guidance["works"], "style_avoid": guidance["avoid"],
         "palette_label": row["palette_label"], "outfits": outfits,
