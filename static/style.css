@@ -386,3 +386,69 @@ h3 { font-family: 'Fraunces', serif; font-size: var(--t-md); font-weight: 500; m
 .lab-item { }
 .lab-item dt { font-family: 'JetBrains Mono', monospace; font-size: var(--t-xs); color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.07em; }
 .lab-item dd { margin: 2px 0 0; font-family: 'JetBrains Mono', monospace; font-size: var(--t-base); font-weight: 500; }
+
+/* ============================================================
+   v8 — 3D showroom
+   ============================================================ */
+.showroom {
+  display: grid; grid-template-columns: minmax(280px, 420px) 1fr; gap: 32px;
+  background: linear-gradient(165deg, #16130F 0%, #221C15 55%, #191410 100%);
+  border-radius: 14px; padding: 28px; margin-top: 24px; align-items: center;
+  box-shadow: 0 24px 60px rgba(20,17,13,0.22);
+}
+.stage {
+  position: relative; height: 460px; border-radius: 12px; cursor: grab;
+  background:
+    radial-gradient(ellipse 62% 42% at 50% 92%, rgba(0,0,0,0.42), transparent 70%),
+    radial-gradient(ellipse 80% 62% at 50% 34%, rgba(255,255,255,0.075), transparent 72%);
+  overflow: hidden; touch-action: pan-y;
+}
+.stage.grabbing { cursor: grabbing; }
+.stage canvas { display: block; }
+.stage-hint {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.09em;
+  color: rgba(255,255,255,0.34); text-transform: uppercase; pointer-events: none;
+}
+.stage-fallback {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.5); font-size: var(--t-sm); text-align: center; padding: 24px;
+}
+
+.showroom-panel { color: #F5F1E8; }
+.showroom-eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: var(--t-xs); letter-spacing: 0.16em;
+  text-transform: uppercase; color: #C79A5C; margin: 0 0 8px;
+}
+.showroom-title { font-family: 'Fraunces', serif; font-size: var(--t-xl); margin: 0 0 6px; color: #fff; font-weight: 500; }
+.showroom-sub { font-size: var(--t-sm); color: rgba(245,241,232,0.62); margin: 0 0 22px; line-height: 1.55; }
+
+.look-switcher { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+.look-btn {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 9px; padding: 11px 13px; cursor: pointer; color: #F5F1E8;
+  font-family: 'Inter', sans-serif; font-size: var(--t-sm);
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+}
+.look-btn:hover { background: rgba(255,255,255,0.085); transform: translateX(3px); }
+.look-btn.active { border-color: var(--look-accent); background: rgba(255,255,255,0.11); }
+.look-chips { display: flex; gap: -4px; flex-shrink: 0; }
+.look-chip {
+  width: 17px; height: 17px; border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,0.35); margin-left: -5px;
+}
+.look-chip:first-child { margin-left: 0; }
+.look-btn-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.look-btn-num { font-family: 'JetBrains Mono', monospace; font-size: var(--t-xs); color: rgba(245,241,232,0.4); }
+
+.showroom-why {
+  font-size: var(--t-sm); line-height: 1.62; color: rgba(245,241,232,0.78);
+  border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin: 0;
+  animation: fadeIn 0.4s ease both;
+}
+
+@media (max-width: 780px) {
+  .showroom { grid-template-columns: 1fr; padding: 20px; gap: 22px; }
+  .stage { height: 380px; }
+}

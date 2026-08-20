@@ -156,8 +156,9 @@ function renderProfileResult(container, data) {
   const combos = (data.style_profile && data.style_profile.combos) || [];
   container.innerHTML = `
     ${styleProfileHtml(data.style_profile)}
+    ${combos.length ? showroomHtml(combos) : ''}
     ${combos.length ? `<div class="result-block">
-      <h2>Complete looks</h2>
+      <h2>Every look, flat</h2>
       <p class="meta">Every pairing chosen by measured colour distance, not guesswork.</p>
       <div class="combo-grid">${combos.map((c,i)=>comboCardHtml(c,i)).join('')}</div>
     </div>` : ''}
@@ -195,6 +196,7 @@ function renderProfileResult(container, data) {
   `;
   const deck = container.querySelector(`#outfit-cards-${data.id}`);
   data.outfits.forEach(o => deck.appendChild(outfitCardHtml(o)));
+  if (combos.length) initShowroom(combos);
 }
 
 // ---------- form submit ----------
@@ -365,4 +367,76 @@ function startAnalysingAnimation() {
 function finishAnalysingAnimation() {
   if (analysisTimer) { clearInterval(analysisTimer); analysisTimer = null; }
   return new Promise(r => setTimeout(r, 260));
+}
+
+
+// ---------- 3D showroom ----------
+function showroomHtml(combos) {
+  return `
+  <section class="showroom" id="showroom">
+    <div class="stage" id="stage">
+      <div class="stage-fallback" id="stage-fallback">Preparing the 3D fitting room\u2026</div>
+      <span class="stage-hint">Drag to rotate</span>
+    </div>
+    <div class="showroom-panel">
+      <p class="showroom-eyebrow">The fitting room</p>
+      <h2 class="showroom-title">See it worn</h2>
+      <p class="showroom-sub">Each look rendered in 3D using your actual palette colours. Pick a look to dress the model.</p>
+      <div class="look-switcher" id="look-switcher">
+        ${combos.map((c, i) => `
+          <button class="look-btn ${i === 0 ? 'active' : ''}" data-look="${i}" style="--look-accent:${c.top.hex}">
+            <span class="look-btn-num">${String(i + 1).padStart(2, '0')}</span>
+            <span class="look-chips">
+              <span class="look-chip" style="background:${c.top.hex}"></span>
+              <span class="look-chip" style="background:${c.bottom.hex}"></span>
+              <span class="look-chip" style="background:${c.shoes.hex}"></span>
+            </span>
+            <span class="look-btn-label">${escapeHtml(c.name)}</span>
+          </button>`).join('')}
+      </div>
+      <p class="showroom-why" id="showroom-why">${escapeHtml(combos[0].why)}</p>
+    </div>
+  </section>`;
+}
+
+function initShowroom(combos) {
+  const stage = document.getElementById('stage');
+  const fallback = document.getElementById('stage-fallback');
+  if (!stage) return;
+
+  const boot = () => {
+    const ok = Mannequin.init(stage);
+    if (ok === false || typeof THREE === 'undefined') {
+      fallback.textContent = 'Your browser could not start 3D rendering \u2014 the flat views below show every look.';
+      return;
+    }
+    if (fallback) fallback.remove();
+    Mannequin.setOutfit(combos[0]);
+  };
+
+  if (typeof THREE === 'undefined') {
+    // three.js still loading — wait for it
+    let tries = 0;
+    const wait = setInterval(() => {
+      tries++;
+      if (typeof THREE !== 'undefined') { clearInterval(wait); boot(); }
+      else if (tries > 60) {
+        clearInterval(wait);
+        fallback.textContent = 'Could not load the 3D renderer \u2014 the flat views below show every look.';
+      }
+    }, 100);
+  } else boot();
+
+  document.getElementById('look-switcher').addEventListener('click', e => {
+    const btn = e.target.closest('.look-btn');
+    if (!btn) return;
+    const idx = Number(btn.dataset.look);
+    document.querySelectorAll('.look-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    Mannequin.setOutfit(combos[idx]);
+    Mannequin.resumeAutoRotate();
+    const why = document.getElementById('showroom-why');
+    why.style.animation = 'none'; void why.offsetWidth; why.style.animation = '';
+    why.textContent = combos[idx].why;
+  });
 }
