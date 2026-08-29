@@ -294,9 +294,14 @@ async function loadSavedProfiles() {
   empty.hidden = true;
   list.innerHTML = profiles.map(p => `
     <button class="profile-card" data-id="${p.id}">
-      <span class="skin-swatch" style="background:${p.skin_hex}"></span>
-      <p class="p-name">${escapeHtml(p.name)}</p>
-      <p class="p-shape">${p.shape}</p>
+      <span class="pc-top">
+        <span class="pc-swatch" style="background:${p.skin_hex}"></span>
+        <span class="pc-hex mono">${p.skin_hex}</span>
+      </span>
+      <span class="pc-name">${escapeHtml(p.name)}</span>
+      <span class="pc-shape">${p.shape}</span>
+      <span class="pc-palette">${escapeHtml(p.palette_label || '')}</span>
+      <span class="pc-go" aria-hidden="true">View reading &rarr;</span>
     </button>
   `).join('');
   list.querySelectorAll('.profile-card').forEach(el => el.addEventListener('click', async () => {
@@ -461,3 +466,41 @@ function initShowroom(combos, scope) {
     why.textContent = combos[idx].why;
   });
 }
+
+// ---------- motion system ----------
+(function motion() {
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+  function observeNew(rootEl) {
+    (rootEl || document).querySelectorAll('.chapter, .combo-card, .form-card, .catalog-bar, .showroom, .profile-card')
+      .forEach(el => {
+        if (el.dataset.revealBound) return;
+        el.dataset.revealBound = '1';
+        el.classList.add('reveal');
+        io.observe(el);
+      });
+  }
+  window.__observeReveal = observeNew;
+  document.addEventListener('DOMContentLoaded', () => observeNew());
+  observeNew();
+
+  // sliding tab indicator
+  const tabsNav = document.querySelector('.tabs');
+  if (tabsNav) {
+    const ind = document.createElement('span');
+    ind.className = 'tab-indicator';
+    tabsNav.appendChild(ind);
+    const move = () => {
+      const active = tabsNav.querySelector('.tab.active');
+      if (!active) return;
+      ind.style.left = active.offsetLeft + 'px';
+      ind.style.width = active.offsetWidth + 'px';
+    };
+    tabsNav.addEventListener('click', () => requestAnimationFrame(move));
+    window.addEventListener('resize', move);
+    setTimeout(move, 60);
+  }
+})();

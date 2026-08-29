@@ -713,3 +713,109 @@ button:hover:not(:disabled) { background: #27272A; }
 .analysing-ring { border-color: var(--line); border-top-color: var(--ink); }
 .label.works { color: #15803D; }
 .label.avoid { color: #B91C1C; }
+
+/* ============================================================
+   v11 — motion, micro-interaction, considered accent
+   Monochrome base stays. Accent enters only on interactive state
+   and on the user's own data, never as decoration.
+   ============================================================ */
+:root {
+  --accent: #2F5BEA;            /* single interactive accent */
+  --accent-soft: #EEF2FE;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur: 340ms;
+  --dur-slow: 620ms;
+}
+
+/* ---- global smoothing ---- */
+html { scroll-behavior: smooth; }
+a, button, .pill, .style-card, .profile-card, .look-btn, .combo-card, .tab, .outfit-card, input, select {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+
+/* ---- scroll reveal ---- */
+.reveal { opacity: 0; transform: translateY(26px); }
+.reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1 !important; transform: none !important; } }
+
+/* ---- tabs: sliding indicator ---- */
+.tabs { position: relative; }
+.tab-indicator {
+  position: absolute; bottom: -1px; height: 2px; background: var(--ink);
+  transition: left var(--dur) var(--ease-out), width var(--dur) var(--ease-out);
+  pointer-events: none;
+}
+.tab.active { border-bottom-color: transparent; }
+.tab:hover { color: var(--ink); }
+
+/* ---- buttons: subtle press + sheen ---- */
+button { position: relative; overflow: hidden; }
+button:not(.secondary-btn):not(.tab)::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+button:not(.secondary-btn):not(.tab):hover::after { transform: translateX(120%); }
+button:active { transform: translateY(1px) scale(0.995); }
+
+/* ---- cards: lift with accent edge ---- */
+.style-card:hover, .combo-card:hover, .profile-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 44px rgba(9,9,11,0.11);
+  border-color: var(--ink);
+}
+.style-card.selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.pill:hover { border-color: var(--ink); transform: translateY(-1px); }
+.pill.selected { background: var(--accent); border-color: var(--accent); }
+.field input:focus, select:focus { outline-color: var(--accent); border-color: var(--accent); }
+.wp-step.active { border-color: var(--accent); }
+
+/* ---- saved reading cards ---- */
+.profile-grid { grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 14px; }
+.profile-card {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+  padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: #fff;
+  position: relative; overflow: hidden;
+}
+.pc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.pc-swatch {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(9,9,11,0.08), 0 6px 14px rgba(9,9,11,0.14);
+}
+.pc-hex { font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.02em; }
+.pc-name { font-family: 'Fraunces', serif; font-size: 1.12rem; font-weight: 500; letter-spacing: -0.015em; }
+.pc-shape { font-size: 0.82rem; color: var(--ink-soft); text-transform: capitalize; }
+.pc-palette {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-faint); margin-top: 2px;
+}
+.pc-go {
+  font-size: 0.78rem; color: var(--accent); margin-top: 12px;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+}
+.profile-card:hover .pc-go { opacity: 1; transform: none; }
+
+/* ---- look buttons in the studio ---- */
+.look-btn { transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+.look-btn:hover { transform: translateX(5px); }
+.look-btn.active { border-color: rgba(255,255,255,0.55); }
+
+/* ---- palette swatch interaction ---- */
+.palette-band-swatch { transition: flex var(--dur) var(--ease-in-out); cursor: default; }
+
+/* ---- link underline sweep ---- */
+.real-product { position: relative; }
+.real-product:hover { transform: translateX(3px); }
