@@ -504,3 +504,55 @@ function initShowroom(combos, scope) {
     setTimeout(move, 60);
   }
 })();
+
+// ---------- landing page: reveal + animated stat counters ----------
+(function landing() {
+  const revealTargets = document.querySelectorAll(
+    '.band-num, .band-title, .band-statement, .band-body, .two-col, .step-block, ' +
+    '.lab-card, .shape-cell, .rp-card, .split-text, .foot-note'
+  );
+  const io = new IntersectionObserver((es) => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  revealTargets.forEach((el, i) => {
+    el.classList.add('reveal');
+    el.style.transitionDelay = Math.min(i % 5, 4) * 70 + 'ms';
+    io.observe(el);
+  });
+
+  // count-up stats
+  const stats = document.querySelectorAll('.stat-n');
+  const sio = new IntersectionObserver((es) => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = Number(el.dataset.count) || 0;
+      const dur = 1100;
+      const t0 = performance.now();
+      (function tick(now) {
+        const p = Math.min((now - t0) / dur, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased) + (p === 1 && target >= 70 ? '+' : '');
+        if (p < 1) requestAnimationFrame(tick);
+      })(t0);
+      sio.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  stats.forEach(s => sio.observe(s));
+
+  // active nav link on scroll
+  const links = document.querySelectorAll('.topnav a[href^="#"]');
+  const sections = [...links].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const nio = new IntersectionObserver((es) => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      links.forEach(l => l.classList.toggle('active',
+        l.getAttribute('href') === '#' + e.target.id));
+    });
+  }, { threshold: 0.35 });
+  sections.forEach(s => nio.observe(s));
+})();

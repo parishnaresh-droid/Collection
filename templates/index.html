@@ -15,25 +15,175 @@
 <header class="topbar">
   <div class="topbar-inner">
     <span class="brand"><span class="brand-dot"></span>Palette &amp; Fit</span>
-    <span class="mono" style="font-size:0.7rem;letter-spacing:0.12em;color:var(--ink-faint);text-transform:uppercase">CIE L*a*b* &middot; &Delta;E 2000</span>
+    <nav class="topnav">
+      <a href="#how">How it works</a>
+      <a href="#science">The science</a>
+      <a href="#room">Fitting room</a>
+      <a href="#tool" class="nav-cta">Start a reading</a>
+    </nav>
   </div>
 </header>
 
 <main>
-  <div class="shell">
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Find your palette,<br><em>then your fit.</em></h1>
+
+<!-- ============ 01 HERO ============ -->
+<section class="vh-hero">
+  <div class="shell hero-grid">
+    <div class="hero-left">
+      <p class="kicker">Colour analysis &middot; Fit analysis &middot; 3D</p>
+      <h1 class="mega">Find your<br>palette,<br><em>then your fit.</em></h1>
+      <div class="hero-actions">
+        <a href="#tool" class="btn-primary">Start a reading</a>
+        <a href="#how" class="btn-ghost">See how it works</a>
+      </div>
     </div>
-    <div>
-      <p class="sub">Skin tone measured in CIE L*a*b*. Body shape from real ratio maths. Outfits paired by perceptual colour distance &mdash; then rendered in 3D.</p>
-      <dl class="hero-meta">
-        <div><dt>Colour</dt><dd>CIEDE2000</dd></div>
-        <div><dt>Shapes</dt><dd>5 classified</dd></div>
+    <div class="hero-right">
+      <p class="hero-lede">Most style advice is guesswork. This measures your skin in <strong>CIE&nbsp;L*a*b*</strong>, classifies your build from real body ratios, and pairs garments by <strong>perceptual colour distance</strong> &mdash; then renders the result in 3D.</p>
+      <dl class="spec-strip">
+        <div><dt>Colour model</dt><dd>CIEDE2000</dd></div>
+        <div><dt>Named colours</dt><dd>70+</dd></div>
+        <div><dt>Body shapes</dt><dd>5</dd></div>
         <div><dt>Output</dt><dd>3D fitting room</dd></div>
       </dl>
     </div>
-  </section>
+  </div>
+  <div class="hero-strip" aria-hidden="true">
+    <span style="background:#C1502E"></span><span style="background:#556B2F"></span>
+    <span style="background:#C99A2E"></span><span style="background:#7B2D26"></span>
+    <span style="background:#1B4D4A"></span><span style="background:#4A2E1D"></span>
+    <span style="background:#ADA587"></span><span style="background:#33415C"></span>
+  </div>
+  <a href="#problem" class="scroll-cue" aria-label="Scroll down"><span></span>Scroll</a>
+</section>
+
+<!-- ============ 02 PROBLEM ============ -->
+<section class="band band-dark" id="problem">
+  <div class="shell">
+    <p class="band-num">01</p>
+    <h2 class="band-statement">&ldquo;Does this colour<br>actually suit me?&rdquo;</h2>
+    <div class="two-col">
+      <p>Almost nobody can answer that reliably. Seasonal colour analysis is usually done by eye, in inconsistent lighting, by someone guessing. The same person gets told &ldquo;autumn&rdquo; by one stylist and &ldquo;winter&rdquo; by the next.</p>
+      <p>And fit advice is worse &mdash; reduced to a body-shape label with a list of rules attached, when what actually matters is the <em>ratio</em> between your shoulders, waist and hips, and what balances it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 HOW IT WORKS ============ -->
+<section class="band" id="how">
+  <div class="shell">
+    <p class="band-num">02</p>
+    <h2 class="band-title">Three inputs. One reading.</h2>
+    <div class="step-grid">
+      <article class="step-block">
+        <span class="step-n">01</span>
+        <h3>A photo</h3>
+        <p>Face detection isolates your face, then a YCbCr filter keeps only true skin pixels &mdash; no hair, no background, no shadow. The median of tens of thousands of pixels becomes your base tone.</p>
+        <div class="step-visual sv-photo">
+          <span class="sv-dot" style="background:#9D684E"></span>
+          <span class="sv-read mono">#9D684E</span>
+        </div>
+      </article>
+      <article class="step-block">
+        <span class="step-n">02</span>
+        <h3>Three measurements</h3>
+        <p>Chest, waist, hip &mdash; the same three a tailor takes. Height is optional and refines proportion advice. Not weight: weight tells you nothing about shape.</p>
+        <div class="step-visual sv-measure">
+          <span><i class="mono">104</i>chest</span>
+          <span><i class="mono">102</i>waist</span>
+          <span><i class="mono">96.5</i>hip</span>
+        </div>
+      </article>
+      <article class="step-block">
+        <span class="step-n">03</span>
+        <h3>Complete looks</h3>
+        <p>Palette, body shape, garment cut, colour pairing and the reasoning behind each choice &mdash; rendered flat and in 3D so you can see the combination, not just read it.</p>
+        <div class="step-visual sv-looks">
+          <span style="background:#C1502E"></span><span style="background:#3B4A5F"></span><span style="background:#F1EDE4"></span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 COLOUR SCIENCE ============ -->
+<section class="band band-split" id="science">
+  <div class="shell split-grid">
+    <div class="split-text">
+      <p class="band-num">03</p>
+      <h2 class="band-title">Colour, measured<br>not guessed.</h2>
+      <p class="band-body">RGB distance is perceptually wrong &mdash; two colours the same numeric distance apart can look nothing alike. So every colour here is converted to <strong>CIE&nbsp;L*a*b*</strong>, a space built so equal numeric distance means equal perceived difference, then compared with <strong>CIEDE2000</strong>.</p>
+      <p class="band-body">Undertone comes from the a*/b* axes rather than crude RGB subtraction, which is why it holds up across different lighting. Depth comes from L*, real perceptual lightness.</p>
+      <p class="proof mono">CIEDE2000 implementation validated against the Sharma et&nbsp;al. reference dataset &mdash; all test pairs match to four decimal places.</p>
+    </div>
+    <div class="split-visual">
+      <div class="lab-card">
+        <div class="lab-card-top">
+          <span class="lab-swatch" style="background:#9D684E"></span>
+          <div>
+            <p class="lab-hex mono">#9D684E</p>
+            <p class="lab-sub">warm undertone &middot; medium depth</p>
+          </div>
+        </div>
+        <dl class="lab-vals">
+          <div><dt>L*</dt><dd class="mono">49.03</dd></div>
+          <div><dt>a*</dt><dd class="mono">18.22</dd></div>
+          <div><dt>b*</dt><dd class="mono">23.29</dd></div>
+          <div><dt>&Delta;E</dt><dd class="mono">6.20</dd></div>
+        </dl>
+        <p class="lab-note">Nearest named colour: <strong>clay</strong></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 BODY SHAPE ============ -->
+<section class="band band-dark" id="shape">
+  <div class="shell">
+    <p class="band-num">04</p>
+    <h2 class="band-title">Five builds.<br>Five strategies.</h2>
+    <p class="band-body wide">Shape isn't a verdict, it's a starting point. Each classification carries a balancing strategy &mdash; what to add, what to avoid, and why.</p>
+    <div class="shape-row">
+      <article class="shape-cell"><h4>Rectangle</h4><p>Little natural taper. Build structure with layering and texture.</p></article>
+      <article class="shape-cell"><h4>Inverted triangle</h4><p>Chest wider than hip. Add visual weight below; skip shoulder structure.</p></article>
+      <article class="shape-cell"><h4>Triangle</h4><p>Hip wider than chest. Structured shoulders, darker straight bottoms.</p></article>
+      <article class="shape-cell"><h4>Oval</h4><p>Waist widest. Vertical lines, open layers, tonal dressing.</p></article>
+      <article class="shape-cell"><h4>Hourglass</h4><p>Defined waist. Preserve it &mdash; don't bury it under uniform volume.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 FITTING ROOM TEASER ============ -->
+<section class="band" id="room">
+  <div class="shell">
+    <p class="band-num">05</p>
+    <h2 class="band-title">See it worn,<br>before you buy it.</h2>
+    <p class="band-body wide">Every recommended combination renders on a rotating 3D figure in your actual palette colours &mdash; real WebGL geometry, not a mockup. Garment cut changes with the fit: boxy tops widen, relaxed legs flare.</p>
+    <div class="room-preview">
+      <div class="rp-card"><span class="rp-label mono">Top</span><span class="rp-chip" style="background:#C1502E"></span><span class="rp-txt">Rust boxy tee</span></div>
+      <div class="rp-card"><span class="rp-label mono">Bottom</span><span class="rp-chip" style="background:#3B4A5F"></span><span class="rp-txt">Raw denim, straight</span></div>
+      <div class="rp-card"><span class="rp-label mono">Layer</span><span class="rp-chip" style="background:#DED8C8"></span><span class="rp-txt">Ecru overshirt</span></div>
+      <div class="rp-card"><span class="rp-label mono">Shoes</span><span class="rp-chip" style="background:#F1EDE4"></span><span class="rp-txt">Off-white low profile</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 STATS ============ -->
+<section class="stats-band">
+  <div class="shell stats-grid">
+    <div><span class="stat-n" data-count="70">0</span><span class="stat-l">named colours</span></div>
+    <div><span class="stat-n" data-count="9">0</span><span class="stat-l">palette seasons</span></div>
+    <div><span class="stat-n" data-count="5">0</span><span class="stat-l">body classifications</span></div>
+    <div><span class="stat-n" data-count="8">0</span><span class="stat-l">style archetypes</span></div>
+  </div>
+</section>
+
+<!-- ============ 08 THE TOOL ============ -->
+<section class="band band-tool" id="tool">
+  <div class="shell">
+    <p class="band-num">06</p>
+    <h2 class="band-title">Your reading.</h2>
+    <p class="band-body wide">A photo and three measurements. Everything else is computed.</p>
+    <div class="tool-wrap">
 <nav class="tabs" role="tablist">
     <button class="tab active" data-view="new" role="tab" aria-selected="true">New reading</button>
     <button class="tab" data-view="saved" role="tab" aria-selected="false">Saved <span id="saved-count" class="tab-count"></span></button>
@@ -158,7 +308,31 @@
       <div id="compare-result" class="compare-grid" hidden></div>
     </div>
   </section>
+
+
+    </div>
   </div>
+</section>
+
+<footer class="site-footer">
+  <div class="shell footer-grid">
+    <div>
+      <span class="brand"><span class="brand-dot"></span>Palette &amp; Fit</span>
+      <p class="foot-note">Skin tone measured in CIE L*a*b*. Body shape from ratio maths. Outfits paired by CIEDE2000 perceptual distance.</p>
+    </div>
+    <div class="foot-links">
+      <a href="#how">How it works</a>
+      <a href="#science">The science</a>
+      <a href="#shape">Body shapes</a>
+      <a href="#tool">Start a reading</a>
+    </div>
+  </div>
+  <div class="shell foot-base mono">
+    <span>Built with OpenCV &middot; Three.js &middot; Flask &middot; PostgreSQL</span>
+    <span>Not medical or professional styling advice</span>
+  </div>
+</footer>
+
 </main>
 
 <template id="outfit-card-template">
