@@ -819,3 +819,78 @@ button:active { transform: translateY(1px) scale(0.995); }
 /* ---- link underline sweep ---- */
 .real-product { position: relative; }
 .real-product:hover { transform: translateX(3px); }
+
+/* ============================================================
+   v12 — tactile brutalism (2026 premium direction)
+   Sharp geometry, 1px hairline borders, stark type, no blur shadows.
+   Depth comes from contrast and offset, not from blur.
+   ============================================================ */
+:root { --hair: #111114; }
+
+/* sharpen everything */
+.card, .form-card, .catalog-bar, .combo-card, .profile-card, .style-card,
+.flatlay, .showroom, .stage, .palette-showcase, .outfit-card, .real-product,
+button, .pill, .field input, select, .look-btn {
+  border-radius: 0 !important;
+}
+.pill { border-radius: 999px !important; }   /* pills stay pills */
+
+/* hairline borders, offset shadow instead of blur */
+.form-card, .catalog-bar, .combo-card, .profile-card {
+  border: 1px solid var(--hair);
+  box-shadow: none;
+}
+.combo-card:hover, .profile-card:hover, .style-card:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 5px 5px 0 var(--hair);
+  border-color: var(--hair);
+}
+.style-card { border: 1px solid var(--hair); }
+.outfit-card { border: 1px solid var(--hair); border-left-width: 4px; }
+.outfit-card:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--hair); }
+.real-product { border: 1px solid rgba(17,17,20,0.18); }
+button:not(.tab) { border: 1px solid var(--hair); }
+.secondary-btn:hover:not(:disabled) { background: var(--ink); color: #fff; }
+
+/* kinetic viewport-scaled headline */
+.hero h1 { font-size: clamp(3.2rem, 11vw, 9rem); letter-spacing: -0.055em; line-height: 0.86; }
+.chapter-title { letter-spacing: -0.04em; }
+
+/* chapter rule becomes a hard 1px line with a number block */
+.chapter { border-top: 1px solid var(--hair); }
+.chapter-num {
+  border: 1px solid var(--hair); padding: 5px 8px; display: inline-block;
+  color: var(--ink); letter-spacing: 0.1em; font-size: 0.62rem;
+}
+
+/* flat-lay: garments on a hard-edged studio field */
+.flatlay {
+  background: #F2F2F4; border: 1px solid var(--hair);
+  min-height: 208px; padding: 20px 12px; gap: 0;
+  align-items: flex-end;
+}
+.flatlay-item .garment { filter: drop-shadow(0 8px 10px rgba(9,9,11,0.16)); }
+.layer-item { max-width: 82px; margin-right: -26px; opacity: 0.97; }
+.tee-item { max-width: 108px; z-index: 2; }
+.trouser-item { max-width: 92px; margin-left: -6px; }
+.shoe-item { max-width: 74px; margin-left: 2px; }
+.flatlay-item:nth-child(1) .garment,
+.flatlay-item:nth-child(2) .garment,
+.flatlay-item:nth-child(3) .garment { max-width: none; }
+
+/* studio panel squared off */
+.showroom { border: 1px solid var(--hair); box-shadow: none; }
+.look-btn { border: 1px solid rgba(255,255,255,0.16); }
+.look-btn.active { border-color: #fff; background: rgba(255,255,255,0.14); }
+.look-btn:hover { transform: translateX(4px); }
+
+/* tabs: hard indicator */
+.tab-indicator { height: 3px; background: var(--hair); }
+
+/* saved cards */
+.profile-card { border: 1px solid var(--hair); }
+.pc-swatch { border-radius: 0; box-shadow: none; border: 1px solid var(--hair); width: 48px; height: 48px; }
+.skin-swatch { border-radius: 0 !important; border: 1px solid var(--hair) !important; box-shadow: none !important; }
+.outfit-swatch, .look-chip, .brand-dot { border-radius: 0 !important; }
+.palette-band { gap: 1px; }
+.palette-band-swatch { box-shadow: none; }

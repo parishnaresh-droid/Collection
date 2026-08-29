@@ -103,10 +103,10 @@ window.Mannequin = (function () {
       color: new THREE.Color(hex), roughness: 0.94, metalness: 0.0,
     });
 
-    const rTop = wide ? 0.505 : 0.445;
-    const rBot = wide ? 0.545 : 0.435;
-    const len  = wide ? 1.34 : 1.24;
-    const yMid = wide ? 1.56 : 1.60;
+    const rTop = wide ? 0.452 : 0.414;
+    const rBot = wide ? 0.478 : 0.404;
+    const len  = wide ? 1.12 : 1.04;
+    const yMid = wide ? 1.62 : 1.66;
 
     const body = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, len, 40, 1, true), mat);
     body.position.y = yMid; body.scale.set(1.14, 1, 0.72);
@@ -216,9 +216,9 @@ window.Mannequin = (function () {
     // two open front panels
     [-1, 1].forEach(side => {
       const panel = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.60, 0.63, 1.34, 24, 1, true, side < 0 ? 0.35 : Math.PI + 0.35, 2.2), mat);
-      panel.position.y = 1.55;
-      panel.scale.set(1.06, 1, 0.80);
+        new THREE.CylinderGeometry(0.492, 0.516, 1.20, 28, 1, true, side < 0 ? 0.42 : Math.PI + 0.42, 2.05), mat);
+      panel.position.y = 1.58;
+      panel.scale.set(1.10, 1, 0.74);
       panel.castShadow = true;
       grp.add(panel);
     });

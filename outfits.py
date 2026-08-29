@@ -123,6 +123,33 @@ def _pick_shoes(top_hex, bottom_hex):
     return best[1], best[2]
 
 
+LAYER_NEUTRALS = {
+    "charcoal": "#3A3A3E",
+    "black": "#1A1A1A",
+    "stone": "#ADA587",
+    "ecru": "#DED8C8",
+    "indigo": "#33415C",
+    "olive": "#4E5A34",
+}
+
+
+def _pick_layer(top_hex, bottom_hex):
+    """Outer layer must read as a separate garment from both the top and the
+    bottom - otherwise the whole silhouette merges into one block of colour."""
+    best = None
+    for name, hexv in LAYER_NEUTRALS.items():
+        d_top = colour.harmonises(top_hex, hexv)
+        d_bot = colour.harmonises(bottom_hex, hexv)
+        score = min(d_top, d_bot)          # separation from the nearer garment
+        if score < 14:                      # too close to either - would merge
+            continue
+        if best is None or score > best[0]:
+            best = (score, name, hexv)
+    if best is None:
+        return "charcoal", LAYER_NEUTRALS["charcoal"]
+    return best[1], best[2]
+
+
 def build_combos(palette, shape, style, fit_preference, height_cm, max_combos=4):
     """Generate multiple complete outfit combos - one per palette colour."""
     strategy = SHAPE_STRATEGY.get(shape, SHAPE_STRATEGY["rectangle"])
@@ -137,6 +164,8 @@ def build_combos(palette, shape, style, fit_preference, height_cm, max_combos=4)
         bottom_garment = style["bottoms"][0]
         shoe_garment = style["shoes"][0]
         layer_garment = style["tops"][-1] if strategy["wants_layer"] and len(style["tops"]) > 1 else None
+
+        layer_name, layer_hex = _pick_layer(top_hex, bottom_hex)
 
         why = (
             f"{c['name'].title()} sits in your palette, and against {bottom_name} the two are "
@@ -153,7 +182,7 @@ def build_combos(palette, shape, style, fit_preference, height_cm, max_combos=4)
             "bottom": {"garment": bottom_garment, "colour": bottom_name, "hex": bottom_hex,
                        "fit": strategy["bottom_fit"]},
             "shoes": {"garment": shoe_garment, "colour": shoe_name, "hex": shoe_hex},
-            "layer": ({"garment": layer_garment, "colour": c["name"], "hex": top_hex}
+            "layer": ({"garment": layer_garment, "colour": layer_name, "hex": layer_hex}
                       if layer_garment else None),
             "delta_e_top_bottom": bottom_delta,
             "why": why,
