@@ -1,3 +1,9 @@
+tests/fixtures/portrait.rgba
+tests/fixtures/portrait.json
+tests/fixtures/*.jpg
+tests/fixtures/*.png
+node_modules/
+package-lock.json
+.DS_Store
 __pycache__/
 *.pyc
-.env

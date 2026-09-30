@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tone — a stylist built out of colour science</title>
+<meta name="description" content="Upload one photo and get a colour palette, a body-proportion read and three complete outfits, each explained. The maths runs in your browser; the photo never leaves your device.">
+<meta name="theme-color" content="#0B0B0C">
+<link rel="canonical" href="https://parishnaresh-droid.github.io/Collection/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://parishnaresh-droid.github.io/Collection/">
+<meta property="og:title" content="Tone — a stylist built out of colour science">
+<meta property="og:description" content="One photo becomes a colour palette, a body-proportion read and three complete outfits, each explained. The maths runs in your browser; the photo never leaves your device.">
+<meta property="og:image" content="https://parishnaresh-droid.github.io/Collection/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%230B0B0C'/><circle cx='16' cy='16' r='6' fill='%23fff'/></svg>">
+
+<script>document.documentElement.classList.add('js');</script>
+<link rel="preload" href="./assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./assets/css/fonts.css">
+<link rel="stylesheet" href="./assets/css/tokens.css">
+<link rel="stylesheet" href="./assets/css/base.css">
+<link rel="stylesheet" href="./assets/css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#fitting">Skip to the fitting room</a>
+
+<header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__mark" href="#top" aria-label="Tone, home">
+      <span class="nav__dot" aria-hidden="true"></span> Tone
+    </a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#problem">Why</a>
+      <a href="#how">How it works</a>
+      <a href="#fitting">Fitting room</a>
+      <a href="#colour">The colour maths</a>
+      <a href="#body">The proportion maths</a>
+      <a href="#limits">What it won't do</a>
+    </nav>
+    <a class="btn" href="#fitting">
+      Start <span class="btn__arrow" aria-hidden="true">→</span>
+    </a>
+  </div>
+  <div class="nav__progress" id="navProgress" aria-hidden="true"></div>
+</header>
+
+<main id="top">
+
+<!-- ============================================================ hero -->
+<section class="hero">
+  <canvas class="hero__canvas" id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="hero__veil" aria-hidden="true"></div>
+
+  <div class="wrap hero__in">
+    <p class="eyebrow reveal">Colour science · Anatomy · No guessing</p>
+
+    <h1 class="reveal-lines" style="margin-top: var(--s-5)">
+      <span class="line-mask"><span class="optical">Most people don't</span></span>
+      <span class="line-mask"><span>have bad taste.</span></span>
+      <span class="line-mask"><span><em>They have no system.</em></span></span>
+    </h1>
+
+    <p class="lead reveal" data-delay="2" style="margin-top: var(--s-5)">
+      Give it one photo. It measures your colouring the way a dermatologist
+      measures skin, works out the proportions of your own frame, and hands
+      back three complete outfits — with the reasoning for every choice.
+    </p>
+
+    <div class="row reveal" data-delay="3" style="margin-top: var(--s-6); gap: var(--s-4)">
+      <a class="btn btn--lg" href="#fitting">
+        Read my colouring <span class="btn__arrow" aria-hidden="true">→</span>
+      </a>
+      <span class="privacy">Runs on your device. The photo is never uploaded.</span>
+    </div>
+
+    <div class="hero__meta reveal" data-delay="4">
+      <div class="hero__stat"><b>CIEDE2000</b><span>The colour-difference formula the industry certifies against</span></div>
+      <div class="hero__stat"><b>ITA°</b><span>Skin depth measured the way dermatology measures it</span></div>
+      <div class="hero__stat"><b>0 bytes</b><span>Leaves your phone. There is no server to send it to</span></div>
+    </div>
+  </div>
+
+  <div class="scroll-cue" aria-hidden="true"><span>Scroll</span><i></i></div>
+</section>
+
+<!-- ========================================================= marquee -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    <span>Undertone</span><span>Hue angle</span><span>Value contrast</span><span>Drop</span>
+    <span>Rise</span><span>Volume budget</span><span>Hem line</span><span>Chroma</span>
+    <span>Undertone</span><span>Hue angle</span><span>Value contrast</span><span>Drop</span>
+    <span>Rise</span><span>Volume budget</span><span>Hem line</span><span>Chroma</span>
+  </div>
+</div>
+
+<!-- ========================================================= problem -->
+<section class="section dark" id="problem">
+  <div class="wrap">
+    <div class="grid grid--split">
+      <div>
+        <p class="eyebrow reveal">The actual problem</p>
+        <h2 class="reveal" data-delay="1" style="margin-top: var(--s-4)">
+          Style advice is written for people who already have style.
+        </h2>
+      </div>
+      <div class="prose reveal" data-delay="2" style="font-size: var(--t-lead); line-height: 1.5">
+        <p>
+          Ask the internet what suits you and you get vibes. Wear what makes you feel
+          confident. Find your aesthetic. Invest in quality basics. None of it tells
+          you which basics, in which colour, cut how, for <em>your</em> face and
+          <em>your</em> frame.
+        </p>
+        <p style="margin-top: var(--s-5); color: var(--on-dark-ink-3)">
+          The irritating part is that a lot of it is measurable. Whether a colour
+          flatters your face is a question about the distance between two points in a
+          perceptual colour space. Whether a hem length works on you is a question
+          about where it falls between your shoulder and the floor. Those have
+          answers. This finds them and shows its working.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid grid--3" style="margin-top: clamp(3rem, 7vw, 6rem)">
+      <div class="reveal">
+        <h3 style="font-size: var(--t-h3)">01</h3>
+        <h4 style="margin-top: var(--s-3)">It never asks your aesthetic</h4>
+        <p class="small muted" style="margin-top: var(--s-2)">
+          "What's your style?" is the one question you came here unable to answer.
+          The engine picks the archetype from your occasion, your frame and your
+          colouring, and tells you why it landed there.
+        </p>
+      </div>
+      <div class="reveal" data-delay="1">
+        <h3 style="font-size: var(--t-h3)">02</h3>
+        <h4 style="margin-top: var(--s-3)">Every answer carries its reason</h4>
+        <p class="small muted" style="margin-top: var(--s-2)">
+          Not "wear olive". Olive at this lightness, because it sits 38° from
+          your skin's hue angle and 22 points below it in lightness, which is what
+          stops your face and your shirt reading as one surface.
+        </p>
+      </div>
+      <div class="reveal" data-delay="2">
+        <h3 style="font-size: var(--t-h3)">03</h3>
+        <h4 style="margin-top: var(--s-3)">It admits what it can't know</h4>
+        <p class="small muted" style="margin-top: var(--s-2)">
+          Some of this is measurement and some is judgement. The page says which is
+          which, every time, and the score is labelled a confidence rather than
+          dressed up as a fact.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== how -->
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow reveal">How it works</p>
+      <h2 class="reveal" data-delay="1">Three steps, about a minute.</h2>
+    </div>
+
+    <div class="grid grid--3">
+      <article class="panel tilt reveal" data-tilt>
+        <p class="tag">Step one</p>
+        <h4 class="tilt__pop" style="margin-top: var(--s-3)">A photo, read on your device</h4>
+        <p class="small muted" style="margin-top: var(--s-3)">
+          It finds your face, corrects for whatever light you were standing in, and
+          samples the skin and hair. Two hex values come out. The image itself never
+          goes anywhere — there is no upload, because there is no server.
+        </p>
+      </article>
+      <article class="panel tilt reveal" data-delay="1" data-tilt>
+        <p class="tag">Step two</p>
+        <h4 class="tilt__pop" style="margin-top: var(--s-3)">Your height, and anything else you know</h4>
+        <p class="small muted" style="margin-top: var(--s-3)">
+          Height alone is enough to start. Add an inside-leg measurement or a chest
+          and waist and the advice stops being statistical and starts being about
+          you. Every field says what it changes.
+        </p>
+      </article>
+      <article class="panel tilt reveal" data-delay="2" data-tilt>
+        <p class="tag">Step three</p>
+        <h4 class="tilt__pop" style="margin-top: var(--s-3)">Three outfits, fully explained</h4>
+        <p class="small muted" style="margin-top: var(--s-3)">
+          A safe one, a sharper one and a bolder one. Each with the cut, the colour,
+          the length in centimetres you can check against a size chart, and the
+          reasoning underneath.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== fitting -->
+<section class="section" id="fitting" style="background: var(--paper-2)">
+  <div class="wrap tool">
+    <div class="section-head">
+      <p class="eyebrow reveal">The fitting room</p>
+      <h2 class="reveal" data-delay="1">Let's read your colouring.</h2>
+      <p class="lead reveal" data-delay="2">
+        Front-facing, even light, no sunglasses. A plain selfie is ideal. If the
+        automatic read lands in the wrong place you can drag it.
+      </p>
+    </div>
+
+    <div class="tool__steps">
+      <!-- step 1 : photo -->
+      <div class="step">
+        <div class="step__head">
+          <span class="step__n">01</span>
+          <h3 style="font-size: var(--t-h4); font-family: var(--font-sans); font-weight: 560">Your photo</h3>
+        </div>
+
+        <div class="grid photo-grid" id="photoGrid">
+          <div>
+            <div class="dropzone" id="dropzone" tabindex="0" role="button"
+                 aria-label="Choose a photo, or drag one here">
+              <svg class="dropzone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+                <rect x="2.5" y="5" width="19" height="15" rx="2"/>
+                <circle cx="12" cy="12.5" r="4"/>
+                <path d="M8 5l1.6-2.2h4.8L16 5"/>
+              </svg>
+              <div>
+                <p style="font-weight: 500">Drop a photo, or tap to choose</p>
+                <p class="caption" style="margin-top: 0.3rem">JPEG, PNG or HEIC · stays on this device</p>
+              </div>
+              <input type="file" id="fileInput" accept="image/*" class="visually-hidden">
+            </div>
+            <p class="caption" style="margin-top: var(--s-3)">
+              No photo handy? <button class="chip" id="useSample" type="button" style="padding:0.3rem 0.7rem">Try it with a sample reading</button>
+            </p>
+            <div id="photoError" class="error u-hidden" role="alert" style="margin-top: var(--s-3)"></div>
+          </div>
+
+          <div id="stageWrap" class="u-hidden">
+            <div class="stage" id="stage">
+              <canvas id="photoCanvas"></canvas>
+              <button class="marker" id="markerSkin" data-label="Skin" aria-label="Skin sample point — drag to move"></button>
+              <button class="marker" id="markerHair" data-label="Hair" aria-label="Hair sample point — drag to move"></button>
+            </div>
+            <p class="caption" id="detectNote" style="margin-top: var(--s-3)"></p>
+          </div>
+        </div>
+
+        <!-- the reading -->
+        <div id="readingBlock" class="reading u-hidden" style="margin-top: var(--s-6)">
+          <div class="palette-bar" id="paletteBar" aria-hidden="true"></div>
+          <dl class="reading__grid" id="readingGrid"></dl>
+        </div>
+      </div>
+
+      <!-- step 2 : the body -->
+      <div class="step" id="stepBody">
+        <div class="step__head">
+          <span class="step__n">02</span>
+          <h3 style="font-size: var(--t-h4); font-family: var(--font-sans); font-weight: 560">Your frame</h3>
+        </div>
+
+        <div class="grid grid--2" style="gap: var(--s-6)">
+          <div class="stack" style="--flow: var(--s-5)">
+            <div class="field">
+              <label for="height">Height — <span class="muted">the only one that's required</span></label>
+              <div class="row" style="gap: var(--s-4)">
+                <input type="range" id="heightRange" min="145" max="205" value="175" step="1" aria-label="Height in centimetres">
+                <output class="num" id="heightOut" style="font-size: var(--t-h4); min-width: 5.5ch">175cm</output>
+              </div>
+              <input type="number" id="height" value="175" min="120" max="230" class="visually-hidden" aria-hidden="true" tabindex="-1">
+            </div>
+
+            <details class="acc" style="border-top-color: var(--hair)">
+              <summary class="acc__q">
+                Add measurements <span class="acc__sign" aria-hidden="true"></span>
+              </summary>
+              <div class="acc__a">
+                <p style="margin-bottom: var(--s-4)">
+                  Optional. Without them the engine uses population averages for your
+                  height and says so. With them it stops averaging.
+                </p>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="inseam">Inside leg (cm)</label>
+                    <input type="number" id="inseam" min="50" max="110" placeholder="—">
+                  </div>
+                  <div class="field">
+                    <label for="chest">Chest (cm)</label>
+                    <input type="number" id="chest" min="60" max="160" placeholder="—">
+                  </div>
+                  <div class="field">
+                    <label for="waist">Waist (cm)</label>
+                    <input type="number" id="waist" min="50" max="160" placeholder="—">
+                  </div>
+                  <div class="field">
+                    <label for="hip">Hip (cm)</label>
+                    <input type="number" id="hip" min="60" max="170" placeholder="—">
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <div class="field">
+              <label id="occLabel">Where are you going?</label>
+              <div class="chips" id="occasions" role="group" aria-labelledby="occLabel"></div>
+            </div>
+          </div>
+
+          <div class="panel" id="framePanel">
+            <p class="tag">What your numbers mean</p>
+            <div id="frameRead" style="margin-top: var(--s-4)" class="stack"></div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: var(--s-6)">
+          <button class="btn btn--lg" id="buildBtn" type="button">
+            Build my outfits <span class="btn__arrow" aria-hidden="true">→</span>
+          </button>
+          <span class="caption" id="buildHint">Add a photo first, or use the sample reading.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- results -->
+    <div id="results" class="u-hidden" style="margin-top: var(--s-7)">
+
+      <div class="section-head" style="margin-bottom: var(--s-5)">
+        <p class="eyebrow">Your palette</p>
+        <h2 id="paletteHeading">Built from your numbers, not from a season chart.</h2>
+      </div>
+
+      <div class="grid grid--2" style="gap: var(--s-6); align-items: start">
+        <div class="stack" style="--flow: var(--s-6)">
+          <div>
+            <p class="tag">Foundation — most of your wardrobe</p>
+            <div class="swatch-row" id="swFoundation" style="margin-top: var(--s-3)"></div>
+          </div>
+          <div>
+            <p class="tag">Grounding — the colours that read as yours</p>
+            <div class="swatch-row" id="swGrounding" style="margin-top: var(--s-3)"></div>
+          </div>
+          <div>
+            <p class="tag">Accent — one per outfit, never two</p>
+            <div class="swatch-row" id="swAccent" style="margin-top: var(--s-3)"></div>
+          </div>
+        </div>
+
+        <div class="stack" style="--flow: var(--s-6)">
+          <div class="panel">
+            <p class="tag">Contrast</p>
+            <h4 id="contrastHead" style="margin-top: var(--s-3)"></h4>
+            <p class="small muted" id="contrastBody" style="margin-top: var(--s-3)"></p>
+          </div>
+          <div>
+            <p class="tag">Worth avoiding near your face — and why</p>
+            <div class="swatch-row" id="swAvoid" style="margin-top: var(--s-3); grid-template-columns: repeat(2, 1fr)"></div>
+          </div>
+          <div>
+            <p class="tag">Combinations that work</p>
+            <div id="combos" class="stack" style="--flow: var(--s-3); margin-top: var(--s-3)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin: clamp(3rem, 7vw, 5.5rem) 0 var(--s-5)">
+        <p class="eyebrow">Your outfits</p>
+        <h2 id="looksHeading">Three registers of the same occasion.</h2>
+        <p class="lead" id="looksLead"></p>
+      </div>
+
+      <div class="looks" id="looks"></div>
+
+      <div style="margin-top: clamp(2.5rem, 6vw, 4rem)">
+        <p class="eyebrow">Why it works</p>
+        <div id="why" style="margin-top: var(--s-5)"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== colour -->
+<section class="section" id="colour">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow reveal">The colour maths</p>
+      <h2 class="reveal" data-delay="1">Why RGB is the wrong place to do this.</h2>
+      <p class="lead reveal" data-delay="2">
+        Two pairs of colours can sit the same numeric distance apart in RGB and look
+        nothing alike. Everything here happens in CIELAB instead, which was built so
+        that equal numeric distance means roughly equal <em>perceived</em> difference.
+      </p>
+    </div>
+
+    <div class="grid grid--split" style="align-items: start">
+      <div class="panel">
+        <p class="tag">Try it</p>
+        <p class="small muted" style="margin: var(--s-3) 0 var(--s-4)">
+          Move either colour and watch the two numbers disagree. RGB distance is the
+          naive answer; ΔE2000 is the one that matches what your eye reports.
+        </p>
+        <div class="field-row" style="grid-template-columns: 1fr 1fr">
+          <div class="field">
+            <label for="demoA">Colour A</label>
+            <input type="color" id="demoA" value="#2C3A4F" style="width:100%;height:3rem;border:1px solid var(--hair-strong);border-radius:var(--radius);background:none;padding:2px">
+          </div>
+          <div class="field">
+            <label for="demoB">Colour B</label>
+            <input type="color" id="demoB" value="#3E4C63" style="width:100%;height:3rem;border:1px solid var(--hair-strong);border-radius:var(--radius);background:none;padding:2px">
+          </div>
+        </div>
+        <dl class="reading__grid" id="demoOut" style="margin-top: var(--s-5)"></dl>
+      </div>
+
+      <div class="stack" style="--flow: var(--s-6)">
+        <div class="reveal">
+          <h4>Depth is measured, not guessed</h4>
+          <p class="small muted" style="margin-top: var(--s-3)">
+            The Individual Typology Angle is the figure dermatology uses to classify
+            skin objectively: the angle of your skin's position on the
+            lightness-against-yellowness plane, <span class="mono">ITA° = arctan((L*−50) / b*) × 180/π</span>.
+            Six bands, from very light through to deep, with thresholds published by
+            Chardon and later extended by Del Bino. It separates depth far more cleanly
+            than lightness on its own, and it is not a judgement anyone made up.
+          </p>
+        </div>
+        <div class="reveal" data-delay="1">
+          <h4>Undertone has physiology underneath it</h4>
+          <p class="small muted" style="margin-top: var(--s-3)">
+            Two pigments pull your skin in different directions: melanin pushes the
+            yellow axis up, haemoglobin pushes the red axis up. The hue angle
+            <span class="mono">h = atan2(b*, a*)</span> is exactly the balance between
+            them — high is melanin-led and reads golden, low is haemoglobin-led and
+            reads rosy. That is why this asks a camera rather than asking whether
+            silver or gold jewellery suits you.
+          </p>
+        </div>
+        <div class="reveal" data-delay="2">
+          <h4>The washed-out colour can be derived</h4>
+          <p class="small muted" style="margin-top: var(--s-3)">
+            A colour within a few degrees of your skin's hue <em>and</em> a few points
+            of its lightness has nothing to push against, so worn near the face it
+            reads as an extension of it. That is the whole mechanism behind "that
+            colour washes you out", and it is the one piece of colour advice that is
+            genuinely computable. So it gets computed, and shown to you as a swatch.
+          </p>
+        </div>
+        <div class="callout reveal" data-delay="3">
+          The implementation is checked against the Sharma, Wu and Dalal test vectors —
+          the set used to certify CIEDE2000 implementations — and against a Python
+          reference implementation across three hundred colours, to nine decimal places.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= body -->
+<section class="section dark" id="body">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow reveal">The proportion maths</p>
+      <h2 class="reveal" data-delay="1">There is exactly one length that always looks wrong.</h2>
+      <p class="lead reveal" data-delay="2">
+        Sources disagree about which uneven proportion is ideal — a third, two
+        thirds, the golden section. They agree on the negative: a hem that splits
+        your silhouette into two equal halves is the one that reliably reads badly.
+        That line is computable from your height, so this computes it instead of
+        inventing a precision nobody has.
+      </p>
+    </div>
+
+    <div class="figure-lab">
+      <div id="figure"></div>
+      <div class="stack" style="--flow: var(--s-5)">
+        <div class="field">
+          <label for="figHeight">Height</label>
+          <div class="row" style="gap: var(--s-4)">
+            <input type="range" id="figHeight" min="150" max="205" value="178" step="1">
+            <output class="num" id="figHeightOut" style="font-size: var(--t-h4)">178cm</output>
+          </div>
+        </div>
+        <dl class="reading__grid" id="figOut"></dl>
+        <p class="small muted" id="figNote"></p>
+      </div>
+    </div>
+
+    <div class="grid grid--3" style="margin-top: clamp(3rem, 7vw, 5rem)">
+      <div class="reveal">
+        <h4>Landmarks, not guesses</h4>
+        <p class="small muted" style="margin-top: var(--s-3)">
+          Shoulder at 0.818 of your height, natural waist at 0.600, hip joint at
+          0.530, knee at 0.285. These are the standard body-segment ratios used in
+          biomechanics. They are population averages, which is why the page says so
+          every time it leans on one.
+        </p>
+      </div>
+      <div class="reveal" data-delay="1">
+        <h4>Volume is a budget</h4>
+        <p class="small muted" style="margin-top: var(--s-3)">
+          "Do baggy clothes suit me" has no yes or no. Nearly everyone can wear
+          volume; very few can wear it everywhere at once, because two voluminous
+          garments stop reading as a silhouette and start reading as a pile. So each
+          garment has a cost and each frame has an allowance.
+        </p>
+      </div>
+      <div class="reveal" data-delay="2">
+        <h4>Drop is the tailor's own number</h4>
+        <p class="small muted" style="margin-top: var(--s-3)">
+          Chest minus waist. A drop of six is a regular cut, eight is athletic, four
+          or less is a fuller cut. It is printed on the inside of half the jackets in
+          any department store, and knowing yours is the difference between guessing
+          a size and choosing one.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== styles -->
+<section class="section" id="styles">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow reveal">The vocabulary</p>
+      <h2 class="reveal" data-delay="1">Eight ways to dress, described by what they do.</h2>
+      <p class="lead reveal" data-delay="2">
+        The engine chooses between these for you. They are here so you can see what
+        it is choosing from — and so the words on your result mean something.
+      </p>
+    </div>
+    <div class="grid grid--3" id="styleGrid"></div>
+  </div>
+</section>
+
+<!-- =========================================================== limits -->
+<section class="section" id="limits" style="background: var(--paper-2)">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow reveal">Honestly</p>
+      <h2 class="reveal" data-delay="1">What this won't do.</h2>
+    </div>
+
+    <div class="grid grid--2" style="gap: clamp(1.5rem,4vw,4rem)">
+      <div>
+        <details class="acc" open>
+          <summary class="acc__q">It won't show you real product photographs <span class="acc__sign" aria-hidden="true"></span></summary>
+          <p class="acc__a">
+            Every image of a garment online belongs to whoever shot it. A styling tool
+            that hotlinks other people's lookbooks is a copyright problem with a colour
+            picker attached. So the pieces are drawn as vectors in the exact colour the
+            engine chose — which is more honest anyway, because the swatch on screen
+            <em>is</em> the recommendation rather than an approximation of it.
+          </p>
+        </details>
+        <details class="acc">
+          <summary class="acc__q">It won't generate a picture of you wearing it <span class="acc__sign" aria-hidden="true"></span></summary>
+          <p class="acc__a">
+            Generating photorealistic images of a real person from their photo is a
+            line this deliberately does not cross, and the photo never leaves your
+            device in any case.
+          </p>
+        </details>
+        <details class="acc">
+          <summary class="acc__q">It won't pretend the score is a measurement <span class="acc__sign" aria-hidden="true"></span></summary>
+          <p class="acc__a">
+            There is no ground truth for "does this outfit suit him". The match figure
+            is the model showing how well an outfit satisfies its own stated rules.
+            The colour distances underneath it are real measurements; the weighting
+            of them is a judgement, and it is written down in the source rather than
+            hidden.
+          </p>
+        </details>
+      </div>
+      <div>
+        <details class="acc" open>
+          <summary class="acc__q">It won't read a bad photo well <span class="acc__sign" aria-hidden="true"></span></summary>
+          <p class="acc__a">
+            Heavy colour filters, strong coloured light, or a face in deep shadow will
+            move the reading. The illuminant correction handles ordinary indoor warmth,
+            not a neon sign. When the automatic read looks wrong, drag the sample points
+            — you can see your own face better than any heuristic can.
+          </p>
+        </details>
+        <details class="acc">
+          <summary class="acc__q">It won't tell you where to buy any of it <span class="acc__sign" aria-hidden="true"></span></summary>
+          <p class="acc__a">
+            Not yet, and not dishonestly. Retail data goes stale fast — over the course
+            of building this, one chain closed, a listing sold between being indexed and
+            being checked, and a whole category went out of stock inside ten minutes.
+            Shopping links belong on a scheduled feed from retailers who publish one, not
+            on a live scrape pretending to be current.
+          </p>
+        </details>
+        <details class="acc">
+          <summary class="acc__q">It won't decide anything for you <span class="acc__sign" aria-hidden="true"></span></summary>
+          <p class="acc__a">
+            Taste is still yours. This narrows an infinite problem down to three
+            defensible answers and explains each one. If you disagree with all three,
+            the explanations should at least tell you what to change.
+          </p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="section--tight footer dark">
+  <div class="wrap">
+    <div class="footer__grid">
+      <div>
+        <span class="nav__mark" style="font-size: 1.6rem">
+          <span class="nav__dot" aria-hidden="true"></span> Tone
+        </span>
+        <p class="small muted" style="margin-top: var(--s-3); max-width: 30ch">
+          A stylist for people who were never taught this, built out of colour
+          science and anatomy rather than vibes.
+        </p>
+      </div>
+      <div>
+        <h5>The maths</h5>
+        <ul>
+          <li>CIELAB / CIELCh (D65)</li>
+          <li>CIEDE2000 colour difference</li>
+          <li>Individual Typology Angle</li>
+          <li>Shades-of-grey illuminant estimation</li>
+          <li>Drillis &amp; Contini segment ratios</li>
+        </ul>
+      </div>
+      <div>
+        <h5>Runs where</h5>
+        <ul>
+          <li>Entirely in this browser tab</li>
+          <li>No account, no upload, no tracking</li>
+          <li>Works offline once loaded</li>
+        </ul>
+      </div>
+      <div>
+        <h5>Sections</h5>
+        <ul>
+          <li><a href="#fitting">Fitting room</a></li>
+          <li><a href="#colour">The colour maths</a></li>
+          <li><a href="#body">The proportion maths</a></li>
+          <li><a href="#limits">What it won't do</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="caption" style="margin-top: var(--s-7)">
+      Not medical or dermatological advice. ITA° is used here as a published,
+      objective way to describe skin depth, nothing more.
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="./assets/js/main.js"></script>
+</body>
+</html>

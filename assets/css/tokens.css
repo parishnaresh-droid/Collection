@@ -1,0 +1,98 @@
+/* ==========================================================================
+   tokens.css — the design system in one place.
+
+   The page is black and white until it knows you. Every colour on screen after
+   the analysis comes out of the reading, injected into the --p-* custom
+   properties at runtime. Nothing decorative is coloured for its own sake,
+   which is what makes the moment the palette arrives feel like something.
+   ========================================================================== */
+
+:root {
+  /* ---- ink and paper ---------------------------------------------------- */
+  --ink: #0B0B0C;
+  --ink-2: #1A1A1D;
+  --ink-3: #3A3A40;
+  --ink-4: #63636E; /* the lightest grey that still clears 4.5:1 on paper */
+  --ink-5: #9A9AA4;
+  --paper: #FFFFFF;
+  --paper-2: #F6F5F3;
+  --paper-3: #EDEBE7;
+  --hair: rgba(11, 11, 12, 0.14);
+  --hair-strong: rgba(11, 11, 12, 0.3);
+
+  /* Reversed sections use these rather than re-declaring every rule. */
+  --on-dark-ink: #FFFFFF;
+  --on-dark-ink-2: rgba(255, 255, 255, 0.72);
+  --on-dark-ink-3: rgba(255, 255, 255, 0.46);
+  --on-dark-hair: rgba(255, 255, 255, 0.16);
+
+  /* ---- the earned palette ------------------------------------------------
+     Neutral greys until analysis replaces them. Declaring them here means
+     every component can reference the palette before it exists. */
+  --p-1: #2B2B2E;
+  --p-2: #55555C;
+  --p-3: #8C8C95;
+  --p-4: #C9C9CF;
+  --p-accent: #0B0B0C;
+  --p-accent-ink: #FFFFFF;
+  --palette-ready: 0; /* flips to 1; drives reveal animations */
+
+  /* ---- type -------------------------------------------------------------
+     Eight steps, not two. Ratio ~1.28 at the small end opening to ~1.45 at
+     the display end, so headings have somewhere to go on a large screen. */
+  --font-display: 'Instrument Serif', 'Times New Roman', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --t-micro: clamp(0.625rem, 0.6rem + 0.12vw, 0.6875rem);
+  --t-caption: clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
+  --t-small: clamp(0.8125rem, 0.78rem + 0.2vw, 0.875rem);
+  --t-body: clamp(0.9375rem, 0.89rem + 0.28vw, 1.0625rem);
+  --t-lead: clamp(1.0625rem, 0.98rem + 0.5vw, 1.375rem);
+  --t-h4: clamp(1.1875rem, 1.05rem + 0.7vw, 1.625rem);
+  --t-h3: clamp(1.5rem, 1.22rem + 1.3vw, 2.5rem);
+  --t-h2: clamp(2rem, 1.4rem + 2.8vw, 4.25rem);
+  --t-h1: clamp(2.75rem, 1.5rem + 5.6vw, 7.5rem);
+  --t-display: clamp(3.25rem, 1.1rem + 9vw, 11rem);
+
+  --lh-tight: 0.94;
+  --lh-snug: 1.08;
+  --lh-normal: 1.5;
+  --lh-loose: 1.65;
+  --tracking-tight: -0.03em;
+  --tracking-wide: 0.16em;
+
+  /* ---- space: a 4px-rooted scale ---------------------------------------- */
+  --s-1: 0.25rem;  --s-2: 0.5rem;   --s-3: 0.75rem;  --s-4: 1rem;
+  --s-5: 1.5rem;   --s-6: 2rem;     --s-7: 3rem;     --s-8: 4rem;
+  --s-9: 6rem;     --s-10: 8rem;    --s-11: 12rem;
+
+  --gutter: clamp(1.25rem, 4vw, 4.5rem);
+  --measure: 62ch;
+  --max: 1560px;
+
+  /* ---- form ------------------------------------------------------------- */
+  --radius: 2px;
+  --radius-lg: 4px;
+  --border: 1px solid var(--hair);
+
+  /* Shadows kept tight and low-alpha. Big soft blurs are what make a page
+     look like a 2015 template. */
+  --lift-1: 0 1px 2px rgba(11, 11, 12, 0.06), 0 2px 10px rgba(11, 11, 12, 0.04);
+  --lift-2: 0 2px 6px rgba(11, 11, 12, 0.08), 0 14px 40px rgba(11, 11, 12, 0.08);
+  --lift-3: 0 4px 12px rgba(11, 11, 12, 0.1), 0 30px 80px rgba(11, 11, 12, 0.12);
+
+  /* ---- motion -----------------------------------------------------------
+     One expressive curve for entrances, one quick curve for interface
+     feedback. Two curves used consistently reads as a system; six reads as
+     someone discovering an easing generator. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur: 420ms;
+  --dur-slow: 900ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 1ms; --dur: 1ms; --dur-slow: 1ms; }
+}
