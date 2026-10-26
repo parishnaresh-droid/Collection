@@ -246,10 +246,13 @@ export function itaBand(angle) {
  * melanin-led (golden, warm) and a low angle is haemoglobin-led (rosy, cool).
  *
  * Thresholds calibrated against measured skin patches across the full ITA
- * range — see tools/calibrate_skin.mjs.
+ * range — see tools/calibrate_skin.mjs. The neutral band is deliberately the
+ * widest of the three: measured faces cluster between about 45 and 57 degrees,
+ * and a narrow band there would flip ordinary colouring between warm and cool
+ * on a degree of noise, swinging the whole palette with it.
  */
-export const UNDERTONE_WARM_H = 54.5;
-export const UNDERTONE_COOL_H = 47.5;
+export const UNDERTONE_WARM_H = 57;
+export const UNDERTONE_COOL_H = 43;
 
 /** Below this chroma the hue angle is numerically unstable — a colour that
  *  close to the neutral axis has no meaningful undertone to report, and

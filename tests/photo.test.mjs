@@ -76,20 +76,42 @@ globalThis.document.createElement = () => {
 };
 
 console.log('Photo pipeline on a real portrait');
+// Node cannot fetch the cascade over a file:// URL, so this exercises the
+// fallback path: region search plus the five-region measurement. The cascade
+// path is covered in the browser, where it actually runs.
 const result = await photo.analysePhoto(fakeImg, { correctLight: false });
 
 check('a face region is found', () => {
-  assert.ok(result.face.width > 40 && result.face.height > 40, JSON.stringify(result.face));
+  assert.ok(result.face.size > 40, JSON.stringify(result.face));
   assert.ok(!result.face.weak, 'fell back to the centre of the frame');
 });
-check('the skin sample lands on skin-coloured pixels', () => {
-  assert.ok(result.skinPixels > 200, `only ${result.skinPixels} skin pixels under the sample`);
+check('five regions are placed inside the image', () => {
+  assert.equal(result.regions.length, 5);
+  for (const r of result.regions) {
+    assert.ok(r.x > 0 && r.x < meta.width, `${r.id} is off the image horizontally`);
+    assert.ok(r.y > 0 && r.y < meta.height, `${r.id} is off the image vertically`);
+    assert.ok(r.radius > 2, `${r.id} has no area`);
+  }
+});
+check('the measurement produces a dominant skin colour', () => {
+  assert.ok(result.measurement, 'no measurement');
+  assert.ok(result.skinPixels > 200, `only ${result.skinPixels} pixels sampled`);
+  assert.ok(result.measurement.share > 0.4, `dominant cluster is only ${result.measurement.share.toFixed(2)}`);
 });
 check('the sampled skin is a plausible skin colour', () => {
   const r = readSkin(result.skinHex);
   assert.ok(r.lch.C > 8 && r.lch.C < 60, `chroma ${r.lch.C.toFixed(1)} is not skin-like`);
   assert.ok(r.lch.h > 20 && r.lch.h < 95, `hue ${r.lch.h.toFixed(1)}° is not skin-like`);
   assert.ok(r.lab.L > 15 && r.lab.L < 92, `lightness ${r.lab.L.toFixed(1)} is not skin-like`);
+});
+check('outlying regions are excluded rather than averaged in', () => {
+  const read = result.measurement.regions.filter((r) => r.read);
+  assert.ok(read.length >= 3, 'too few regions read');
+  for (const r of read) {
+    if (!r.outlier) assert.ok(r.deltaE <= 15, `${r.id} counted at ΔE ${r.deltaE}`);
+  }
+  assert.ok(result.measurement.spread < 20,
+    `spread of ${result.measurement.spread} suggests an outlier was counted`);
 });
 check('a hair sample is produced and is darker than the skin', () => {
   assert.ok(result.hairHex, 'no hair sample');
@@ -102,23 +124,23 @@ check('illuminant estimation returns usable gains', () => {
 check('the reading drives a complete palette', () => {
   const p = buildPalette(readSkin(result.skinHex, result.hairHex));
   assert.equal(p.foundation.length, 4);
-  assert.equal(p.grounding.length, 3);
-  assert.equal(p.accent.length, 2);
+  assert.ok(p.black.hex && p.white.hex);
   assert.ok(p.wearable.every((s) => /^#[0-9A-F]{6}$/.test(s.hex)));
 });
-check('moving the sample point changes the reading', () => {
-  const moved = photo.readPoints(
+check('moving the face frame changes the reading', () => {
+  const moved = photo.remeasure(
     result.imageData,
-    { x: result.points.skin.x + result.radius * 3, y: result.points.skin.y },
-    result.points.hair, result.radius
+    result.regions.map((r) => ({ ...r, x: r.x + r.radius * 2.5 })),
+    result.hairRegion
   );
-  assert.ok(moved.skinHex, 'no reading after moving the point');
+  assert.ok(moved.skinHex, 'no reading after moving the frame');
 });
 
 const reading = readSkin(result.skinHex, result.hairHex);
 console.log(`\n  measured: skin ${result.skinHex} hair ${result.hairHex}`);
-console.log(`  face via ${result.face.source} at ${Math.round(result.face.x)},${Math.round(result.face.y)} ${Math.round(result.face.width)}x${Math.round(result.face.height)}`);
+console.log(`  detector: ${result.detector}; working edge ${result.workingEdge}px; face ${Math.round(result.face.size)}px`);
 console.log(`  ITA ${reading.ita.toFixed(1)}° (${reading.itaBand}) -> ${reading.depth}; hue ${reading.lch.h.toFixed(1)}° -> ${reading.undertone}; chroma ${reading.chroma.toFixed(1)} -> ${reading.clarity}`);
+console.log(`  face varies by ΔE ${result.measurement.spread} across ${result.measurement.regions.filter((r) => r.read && !r.outlier).length} skin regions`);
 console.log(`  contrast dL ${reading.contrast.deltaL.toFixed(1)} -> ${reading.contrast.level}`);
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -394,3 +394,94 @@ input[type='range']::-moz-range-thumb {
 .photo-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); max-width: 640px; }
 .photo-grid.has-photo { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); max-width: none; }
 @media (max-width: 900px) { .photo-grid.has-photo { grid-template-columns: minmax(0, 1fr); } }
+
+/* ------------------------------------------------- facial region readout */
+.regions { display: grid; gap: var(--s-2); }
+.region {
+  display: grid; grid-template-columns: 1.6rem 1fr auto auto; gap: var(--s-3);
+  align-items: center; padding: var(--s-2) 0; border-top: 1px solid var(--hair);
+  font-size: var(--t-caption);
+}
+.region__chip { width: 1.5rem; height: 1.5rem; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(11,11,12,.18); }
+.region__name { font-weight: 500; }
+.region__name small { display: block; font-weight: 400; color: var(--ink-4); }
+.region__de { font-family: var(--font-mono); font-size: var(--t-micro); color: var(--ink-4); }
+.region__flag {
+  font-family: var(--font-mono); font-size: var(--t-micro); text-transform: uppercase;
+  letter-spacing: .08em; color: var(--ink-4); white-space: nowrap;
+}
+.region.is-out .region__flag { color: #9B2F1C; }
+
+/* ------------------------------------------------- face against a colour */
+.tryon { display: grid; gap: var(--s-3); }
+.tryon__stage {
+  position: relative; border-radius: var(--radius-lg); overflow: hidden;
+  background: var(--try, var(--paper-3)); display: grid; place-items: center;
+  padding: clamp(1rem, 3vw, 2rem); min-height: 210px;
+  transition: background var(--dur) var(--ease-out);
+}
+.tryon__stage canvas {
+  width: min(190px, 48%); height: auto; border-radius: 50%;
+  box-shadow: 0 10px 30px rgba(11,11,12,.22);
+}
+.tryon__swatches { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.tryon__sw {
+  width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--sw);
+  box-shadow: inset 0 0 0 1px rgba(11,11,12,.2); cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.tryon__sw:hover { transform: scale(1.12); }
+.tryon__sw[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+.tryon__sw.is-avoid { position: relative; }
+.tryon__sw.is-avoid::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-linear-gradient(45deg, transparent 0 5px, rgba(255,255,255,.4) 5px 6px);
+}
+
+/* --------------------------------------------------- black and white ---- */
+.anchors { display: grid; gap: var(--s-4); }
+.anchor { display: grid; grid-template-columns: 3.4rem 1fr; gap: var(--s-4); align-items: start; }
+.anchor__chip {
+  width: 3.4rem; height: 4.2rem; border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px rgba(11,11,12,.18);
+}
+.anchor__name {
+  font-size: var(--t-body); font-weight: 560; text-transform: capitalize;
+  letter-spacing: -.01em;
+}
+.anchor__verdict { font-family: var(--font-mono); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-4); }
+.anchor__body { font-size: var(--t-small); color: var(--ink-2); margin-top: .35rem; }
+.anchor__alts { display: flex; gap: .3rem; margin-top: var(--s-3); flex-wrap: wrap; }
+.anchor__alts span {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: var(--t-micro); color: var(--ink-4);
+  border: 1px solid var(--hair); border-radius: 999px; padding: .2rem .5rem .2rem .25rem;
+}
+.anchor__alts i { width: .85rem; height: .85rem; border-radius: 50%; background: var(--sw); display: block; }
+
+/* ------------------------------------------------------- fitting room --- */
+.fitroom__grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3rem); }
+@media (max-width: 900px) { .fitroom__grid { grid-template-columns: minmax(0, 1fr); } }
+.fitroom__stage {
+  position: relative; aspect-ratio: 4 / 5; border: 1px solid var(--hair);
+  border-radius: var(--radius-lg); overflow: hidden; display: grid; place-items: center;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #ffffff 0%, transparent 60%),
+    linear-gradient(170deg, var(--paper-2), var(--paper-3));
+}
+.fitroom__stage canvas { position: absolute; inset: 0; }
+.fitroom__start { position: relative; z-index: 2; }
+.fitroom__note { position: absolute; bottom: var(--s-4); left: 0; right: 0; text-align: center; z-index: 2; }
+.fitroom__stage.is-live .fitroom__start, .fitroom__stage.is-live .fitroom__note { display: none; }
+.fitroom__stage.is-loading .fitroom__start { opacity: .5; pointer-events: none; }
+
+/* Read-only overlay showing exactly which patches were measured. */
+.sample-layer { position: absolute; inset: 0; pointer-events: none; }
+.sample-dot {
+  position: absolute; transform: translate(-50%, -50%); border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, .92);
+  box-shadow: 0 0 0 1px rgba(11, 11, 12, .45);
+}
+.sample-dot.is-out { border-style: dashed; border-color: rgba(255, 180, 160, .9); }
+.marker { z-index: 3; }
+#markerHair { width: 1.9rem; height: 1.9rem; margin: -0.95rem 0 0 -0.95rem; }

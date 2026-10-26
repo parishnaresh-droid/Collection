@@ -6,15 +6,18 @@
   "type": "module",
   "scripts": {
     "serve": "python3 -m http.server 8000",
-    "test": "node tests/colour.test.mjs && node tests/photo.test.mjs",
+    "test": "node tests/colour.test.mjs && node tests/palette.test.mjs && node tests/photo.test.mjs",
     "test:colour": "node tests/colour.test.mjs",
     "test:photo": "node tests/photo.test.mjs",
+    "test:palette": "node tests/palette.test.mjs",
     "parity": "python3 tools/make_parity_vectors.py",
     "calibrate": "node tools/calibrate_skin.mjs"
   },
   "devDependencies": {
     "@fontsource/instrument-serif": "^5.2.5",
     "@fontsource/inter": "^5.2.5",
-    "@fontsource/jetbrains-mono": "^5.2.5"
+    "@fontsource/jetbrains-mono": "^5.2.5",
+    "playwright": "^1.64.1",
+    "three": "^0.186.1"
   }
 }

@@ -13,6 +13,9 @@
  * and the person can see their own face better than any heuristic can.
  */
 
+import { rgbToLab, labToRgb, labToHex, deltaE2000 } from './colour.js';
+import { detectFaces, locatePupils, faceRegions, hairRegion } from './face.js';
+
 export const MAX_EDGE = 1400;
 
 /* ------------------------------------------------------- loading an image */
@@ -162,6 +165,37 @@ export async function findFace(canvas) {
   }
 
   return findFaceByRegion(canvas);
+}
+
+
+/**
+ * Mean absolute difference between neighbouring samples inside a rectangle — a
+ * cheap stand-in for "how much detail is in here". Faces score high, flat
+ * surfaces score near zero. Used by the fallback region search to tell a face
+ * from a wall when both are skin-coloured.
+ */
+function localVariance(data, W, H, x, y, w, h) {
+  const x0 = Math.max(0, Math.round(x));
+  const y0 = Math.max(0, Math.round(y));
+  const x1 = Math.min(W - 1, Math.round(x + w));
+  const y1 = Math.min(H - 1, Math.round(y + h));
+  const step = Math.max(2, Math.round(Math.min(x1 - x0, y1 - y0) / 28));
+  if (x1 - x0 < step * 3 || y1 - y0 < step * 3) return 0;
+
+  const lum = (px, py) => {
+    const i = (py * W + px) * 4;
+    return 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+  };
+
+  let sum = 0, n = 0;
+  for (let py = y0; py + step <= y1; py += step) {
+    for (let px = x0; px + step <= x1; px += step) {
+      sum += Math.abs(lum(px, py) - lum(px + step, py));
+      sum += Math.abs(lum(px, py) - lum(px, py + step));
+      n += 2;
+    }
+  }
+  return n ? sum / n : 0;
 }
 
 /**
@@ -320,179 +354,331 @@ export function sampleDisc(imageData, cx, cy, radius, { skinOnly = false } = {})
   return { r: med(rs), g: med(gs), b: med(bs), count: rs.length };
 }
 
+
+/* ============================================================ measurement ==
+ *
+ * Facial skin is not one colour, so the reading is not one sample.
+ *
+ * Five regions are measured separately, their pixels pooled, and the pool
+ * clustered in CIELAB. The biggest cluster that still looks like skin is the
+ * answer — "the major colour you could find on the face", which is exactly the
+ * right way to put it. Beard shadow, a specular highlight on the nose and the
+ * shaded side of a face all form their own smaller clusters and are left out
+ * of the result rather than averaged into it.
+ */
+
 const median = (arr) => { arr.sort((a, b) => a - b); return arr[arr.length >> 1]; };
 
-/**
- * Mean absolute difference between neighbouring samples inside a rectangle —
- * a cheap stand-in for "how much detail is in here". Faces score high, flat
- * surfaces score near zero, and it costs one pass over a coarse grid.
- */
-function localVariance(data, W, H, x, y, w, h) {
-  const x0 = Math.max(0, Math.round(x));
-  const y0 = Math.max(0, Math.round(y));
-  const x1 = Math.min(W - 1, Math.round(x + w));
-  const y1 = Math.min(H - 1, Math.round(y + h));
-  const step = Math.max(2, Math.round(Math.min(x1 - x0, y1 - y0) / 28));
-  if (x1 - x0 < step * 3 || y1 - y0 < step * 3) return 0;
-
-  const lum = (px, py) => {
-    const i = (py * W + px) * 4;
-    return 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-  };
-
-  let sum = 0, n = 0;
-  for (let py = y0; py + step <= y1; py += step) {
-    for (let px = x0; px + step <= x1; px += step) {
-      sum += Math.abs(lum(px, py) - lum(px + step, py));
-      sum += Math.abs(lum(px, py) - lum(px, py + step));
-      n += 2;
-    }
-  }
-  return n ? sum / n : 0;
-}
-
-/**
- * Read the skin from the whole face at once rather than from a single point.
- *
- * Sampling one spot is fragile in exactly the ways faces are varied: a beard,
- * a shadow down one side, a highlight on the nose. So this takes every
- * skin-masked pixel in the middle of the face box, throws away the darkest
- * quarter (beard, shadow, nostril, the shaded side of the nose) and the
- * brightest tenth (specular highlight), and takes the median of what is left.
- * The marker the interface shows sits at the centroid of the pixels that
- * actually survived, so it points at what was really measured.
- */
-export function sampleFace(imageData, face) {
-  const { width: W, height: H, data } = imageData;
-  const x0 = Math.max(0, Math.round(face.x + face.width * 0.16));
-  const x1 = Math.min(W - 1, Math.round(face.x + face.width * 0.84));
-  // Skip the hairline at the top and the beard/jaw at the bottom.
-  const y0 = Math.max(0, Math.round(face.y + face.height * 0.16));
-  const y1 = Math.min(H - 1, Math.round(face.y + face.height * 0.70));
-
-  const px = [];
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      const i = (y * W + x) * 4;
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      if (!isSkinStrict(r, g, b)) continue;
-      px.push({ x, y, r, g, b, lum: 0.2126 * r + 0.7152 * g + 0.0722 * b });
-    }
-  }
-  if (px.length < 60) return null;
-
-  px.sort((a, b) => a.lum - b.lum);
-  const keep = px.slice(Math.floor(px.length * 0.25), Math.floor(px.length * 0.90));
-  const use = keep.length > 30 ? keep : px;
-
-  const cx = use.reduce((s, p) => s + p.x, 0) / use.length;
-  const cy = use.reduce((s, p) => s + p.y, 0) / use.length;
-  return {
-    r: median(use.map((p) => p.r)),
-    g: median(use.map((p) => p.g)),
-    b: median(use.map((p) => p.b)),
-    count: use.length,
-    point: { x: cx, y: cy },
-  };
-}
-
-/**
- * The hair sample: a narrow window just above the face box, centred, taking
- * the median of its darker half. Hair is not always dark, but it is reliably
- * darker than the scalp line and the sky behind it, and keeping the window
- * tight to the top of the head is what stops a doorway winning.
- */
-export function sampleHair(imageData, face) {
-  const { width: W, height: H, data } = imageData;
-  const x0 = Math.max(0, Math.round(face.x + face.width * 0.32));
-  const x1 = Math.min(W - 1, Math.round(face.x + face.width * 0.68));
-  const y0 = Math.max(0, Math.round(face.y - face.height * 0.26));
-  const y1 = Math.max(0, Math.round(face.y - face.height * 0.02));
-  if (x1 - x0 < 3 || y1 - y0 < 3) return null;
-
-  const px = [];
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      const i = (y * W + x) * 4;
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      px.push({ x, y, r, g, b, lum: 0.2126 * r + 0.7152 * g + 0.0722 * b });
-    }
-  }
-  if (px.length < 20) return null;
-  px.sort((a, b) => a.lum - b.lum);
-  const use = px.slice(0, Math.max(10, Math.floor(px.length * 0.5)));
-  return {
-    r: median(use.map((p) => p.r)),
-    g: median(use.map((p) => p.g)),
-    b: median(use.map((p) => p.b)),
-    count: use.length,
-    point: {
-      x: use.reduce((s, p) => s + p.x, 0) / use.length,
-      y: use.reduce((s, p) => s + p.y, 0) / use.length,
-    },
-  };
-}
-
 export const hex = (r, g, b) =>
-  `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+  `#${[r, g, b].map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+
+/** Collect the skin-coloured pixels inside one circular region. */
+export function collectRegion(imageData, region, { skinOnly = true, stride = 1 } = {}) {
+  const { width: W, height: H, data } = imageData;
+  const { x: cx, y: cy, radius } = region;
+  const r2 = radius * radius;
+  const x0 = Math.max(0, Math.floor(cx - radius));
+  const x1 = Math.min(W - 1, Math.ceil(cx + radius));
+  const y0 = Math.max(0, Math.floor(cy - radius));
+  const y1 = Math.min(H - 1, Math.ceil(cy + radius));
+  const out = [];
+
+  for (let y = y0; y <= y1; y += stride) {
+    for (let x = x0; x <= x1; x += stride) {
+      const dx = x - cx, dy = y - cy;
+      if (dx * dx + dy * dy > r2) continue;
+      const i = (y * W + x) * 4;
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      if (skinOnly && !isSkin(r, g, b)) continue;
+      out.push([r, g, b]);
+    }
+  }
+  return out;
+}
 
 /**
- * The whole pipeline. Returns the corrected image data (so the page can draw
- * exactly what was measured), the two sample points, and their hex values.
+ * Weighted k-means in CIELAB.
+ *
+ * LAB rather than RGB because the clusters have to mean something
+ * perceptually: a shadow on one cheek should land in a different cluster from
+ * the lit cheek only if a person would call them different colours.
+ *
+ * Seeded deterministically along the lightness axis, because a reading that
+ * changes between runs of the same photo is not a measurement.
  */
+export function kmeansLab(points, k = 3, iterations = 14) {
+  if (!points.length) return [];
+  const labs = points.map((p) => ({ lab: rgbToLab(p.rgb[0], p.rgb[1], p.rgb[2]), w: p.weight ?? 1, rgb: p.rgb }));
+  const Ls = labs.map((p) => p.lab[0]).sort((a, b) => a - b);
+  const centroids = [];
+  for (let i = 0; i < k; i++) {
+    const q = Ls[Math.min(Ls.length - 1, Math.floor(((i + 0.5) / k) * Ls.length))];
+    const seed = labs.find((p) => p.lab[0] === q) ?? labs[0];
+    centroids.push([...seed.lab]);
+  }
+
+  const assign = new Array(labs.length).fill(0);
+  for (let it = 0; it < iterations; it++) {
+    let moved = false;
+    for (let i = 0; i < labs.length; i++) {
+      let best = 0, bestD = Infinity;
+      for (let c = 0; c < k; c++) {
+        const d = deltaE2000(labs[i].lab, centroids[c]);
+        if (d < bestD) { bestD = d; best = c; }
+      }
+      if (assign[i] !== best) { assign[i] = best; moved = true; }
+    }
+    const sums = Array.from({ length: k }, () => [0, 0, 0, 0]);
+    for (let i = 0; i < labs.length; i++) {
+      const s = sums[assign[i]], w = labs[i].w;
+      s[0] += labs[i].lab[0] * w; s[1] += labs[i].lab[1] * w; s[2] += labs[i].lab[2] * w; s[3] += w;
+    }
+    for (let c = 0; c < k; c++) {
+      if (sums[c][3] > 0) centroids[c] = [sums[c][0] / sums[c][3], sums[c][1] / sums[c][3], sums[c][2] / sums[c][3]];
+    }
+    if (!moved && it > 1) break;
+  }
+
+  const clusters = centroids.map((lab) => ({ lab, mass: 0, count: 0 }));
+  for (let i = 0; i < labs.length; i++) {
+    clusters[assign[i]].mass += labs[i].w;
+    clusters[assign[i]].count++;
+  }
+  return clusters
+    .filter((c) => c.count > 0)
+    .map((c) => ({ ...c, hex: labToHex(c.lab[0], c.lab[1], c.lab[2]) }))
+    .sort((a, b) => b.mass - a.mass);
+}
+
+/**
+ * The whole facial measurement: per-region colours, the dominant colour across
+ * them, and how much the face varies.
+ */
+/** Two cluster centroids closer than this describe the same colour under
+ *  different light, not two colours. */
+export const CLUSTER_MERGE_DE = 10;
+
+/** A facial region further than this from the dominant colour is not skin. */
+export const OUTLIER_DE = 15;
+
+export function mergeClusters(clusters, threshold = CLUSTER_MERGE_DE) {
+  const out = [];
+  for (const c of clusters) {
+    const near = out.find((o) => deltaE2000(o.lab, c.lab) < threshold);
+    if (!near) { out.push({ ...c, lab: [...c.lab], merged: 1 }); continue; }
+    const total = near.mass + c.mass;
+    near.lab = near.lab.map((v, i) => (v * near.mass + c.lab[i] * c.mass) / total);
+    near.mass = total;
+    near.count += c.count;
+    near.merged++;
+    near.hex = labToHex(near.lab[0], near.lab[1], near.lab[2]);
+  }
+  return out.sort((a, b) => b.mass - a.mass);
+}
+
+export function measureFace(imageData, regions) {
+  const pool = [];
+  const perRegion = [];
+
+  for (const region of regions) {
+    let px = collectRegion(imageData, region, { skinOnly: true });
+    // A region that is mostly beard or mostly hair will not pass the skin
+    // mask. Rather than forcing it, that region is reported as unread.
+    if (px.length < 25) {
+      perRegion.push({ ...region, read: false, pixels: px.length });
+      continue;
+    }
+    // Trim the extremes before taking the region's own median: the darkest
+    // pixels are shadow and stubble, the brightest are specular highlights,
+    // and neither is skin colour.
+    const lum = px.map((p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]);
+    const order = px.map((_, i) => i).sort((a, b) => lum[a] - lum[b]);
+    const keep = order.slice(Math.floor(order.length * 0.18), Math.floor(order.length * 0.93)).map((i) => px[i]);
+    const use = keep.length > 15 ? keep : px;
+
+    const med = [0, 1, 2].map((ch) => median(use.map((p) => p[ch])));
+    perRegion.push({
+      ...region,
+      read: true,
+      pixels: use.length,
+      hex: hex(med[0], med[1], med[2]),
+      lab: rgbToLab(med[0], med[1], med[2]),
+    });
+
+    // Feed the pool at a stride, so a large region does not simply outvote a
+    // small one beyond its stated weight.
+    const step = Math.max(1, Math.round(use.length / 900));
+    for (let i = 0; i < use.length; i += step) pool.push({ rgb: use[i], weight: region.weight ?? 1 });
+  }
+
+  if (pool.length < 40) return null;
+
+  // Lighting splits one skin colour into several clusters — a lit cheek and a
+  // shaded one are the same skin. Clusters closer together than the threshold
+  // are merged by mass before anything is called dominant, otherwise the
+  // winner is decided by which side of the face the light happened to be on.
+  const clusters = mergeClusters(kmeansLab(pool, 3), CLUSTER_MERGE_DE);
+
+  // Then prefer the largest cluster that still passes the stricter skin test:
+  // a dominant cluster of beard is dominant but wrong.
+  const skinLike = clusters.filter((c) => {
+    const [r, g, b] = labToRgb(c.lab[0], c.lab[1], c.lab[2]);
+    return isSkinStrict(r, g, b);
+  });
+  const dominant = skinLike[0] ?? clusters[0];
+
+  // Mark which regions belong to the same surface as the dominant colour.
+  // A beard passes every skin test going — it is dark brown, which is a skin
+  // colour — so the test that works is distance from the rest of the face.
+  // Anything this far from the dominant cluster is hair, shadow or a shaved
+  // jaw, and describing it as skin variation would describe the beard.
+  for (const r of perRegion) {
+    if (!r.read) { r.isSkin = false; r.outlier = true; continue; }
+    r.dE = deltaE2000(r.lab, dominant.lab);
+    r.isSkin = r.dE <= OUTLIER_DE;
+    r.outlier = !r.isSkin;
+  }
+
+  const skinRegions = perRegion.filter((r) => r.read && r.isSkin);
+  let spread = 0;
+  for (let i = 0; i < skinRegions.length; i++) {
+    for (let j = i + 1; j < skinRegions.length; j++) {
+      spread = Math.max(spread, deltaE2000(skinRegions[i].lab, skinRegions[j].lab));
+    }
+  }
+
+  return {
+    hex: dominant.hex,
+    lab: dominant.lab,
+    share: dominant.mass / clusters.reduce((s, c) => s + c.mass, 0),
+    clusters,
+    regions: perRegion.map((r) => ({
+      ...r,
+      deltaE: r.read ? Math.round(deltaE2000(r.lab, dominant.lab) * 10) / 10 : null,
+    })),
+    spread: Math.round(spread * 10) / 10,
+    sampled: pool.length,
+  };
+}
+
+/** Median of a disc, used for hair and for a manually dragged sample. */
+export function sampleDiscMedian(imageData, region, { skinOnly = false, darkHalf = false } = {}) {
+  let px = collectRegion(imageData, region, { skinOnly });
+  if (px.length < 12) px = collectRegion(imageData, region, { skinOnly: false });
+  if (px.length < 8) return null;
+  if (darkHalf) {
+    const lum = px.map((p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]);
+    const order = px.map((_, i) => i).sort((a, b) => lum[a] - lum[b]);
+    px = order.slice(0, Math.max(8, Math.floor(order.length * 0.5))).map((i) => px[i]);
+  }
+  const med = [0, 1, 2].map((ch) => median(px.map((p) => p[ch])));
+  return { hex: hex(med[0], med[1], med[2]), count: px.length };
+}
+
+/* ================================================================ pipeline = */
+
+/**
+ * Load, correct, detect, measure. Everything on the device.
+ */
+export const DRAFT_EDGE = 900;
+export const TARGET_FACE_PX = 300;
+export const MAX_WORKING_EDGE = 2200;
+
 export async function analysePhoto(img, { correctLight = true } = {}) {
-  const canvas = toCanvas(img);
+  // Pass one: find the face cheaply on a small canvas. The cascade is linear
+  // in pixel count, so searching a 900px image costs a fraction of searching a
+  // 2200px one and gives the same answer about *where* the face is.
+  const draft = toCanvas(img, DRAFT_EDGE);
+  const draftData = draft.getContext('2d', { willReadFrequently: true })
+    .getImageData(0, 0, draft.width, draft.height);
+
+  let found = null;
+  let detector = 'cascade';
+  try {
+    const faces = await detectFaces(draftData);
+    if (faces.length) found = faces[0];
+  } catch (err) {
+    console.warn('[photo] face model unavailable, falling back:', err.message);
+  }
+
+  // Pass two: re-render at whatever resolution puts a useful number of pixels
+  // inside the face. In a full-length photo the face can be a tenth of the
+  // frame, and measuring skin from two hundred pixels is measuring noise.
+  let workingEdge = 1400;
+  if (found) {
+    const draftEdge = Math.max(draft.width, draft.height);
+    const wanted = draftEdge * (TARGET_FACE_PX / found.size);
+    workingEdge = Math.round(Math.max(1200, Math.min(MAX_WORKING_EDGE, wanted)));
+  }
+
+  const canvas = toCanvas(img, workingEdge);
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  let data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const original = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const scaleUp = canvas.width / draft.width;
 
-  // Find the face on the original pixels, *before* touching the colour.
-  // Correction is about measuring the skin accurately; it should have no say
-  // in where the skin is, and letting it vote made the detector chase flowers.
-  const face = await findFace(canvas);
+  let face;
+  if (found) {
+    face = { x: found.x * scaleUp, y: found.y * scaleUp, size: found.size * scaleUp, score: found.score };
+  } else {
+    const region = findFaceByRegion(canvas);
+    detector = region.weak ? 'none' : 'skin-region fallback';
+    face = {
+      x: region.x + region.width / 2,
+      y: region.y + region.height / 2,
+      size: Math.max(region.width, region.height * 0.8),
+      score: 0,
+      weak: region.weak,
+    };
+  }
 
-  const illuminant = estimateIlluminant(data);
-  if (correctLight && illuminant.strength > 0.02) {
-    data = correctIlluminant(data, illuminant);
+  // Eyes are refined on the working canvas, where there are enough pixels for
+  // the localiser to be worth running.
+  let pupils = null;
+  if (detector === 'cascade') {
+    try { pupils = await locatePupils(original, face); } catch { pupils = null; }
+  }
+
+  // White balance decides what colour the skin is. It is applied only after
+  // detection, because it must never get a say in where the skin is.
+  let data = original;
+  const illuminant = estimateIlluminant(original);
+  const corrected = correctLight && illuminant.strength > 0.02;
+  if (corrected) {
+    data = correctIlluminant(original, illuminant);
     ctx.putImageData(data, 0, 0);
   }
 
-  const radius = Math.max(4, Math.round(Math.min(canvas.width, canvas.height) * 0.022));
-
-  const skin = sampleFace(data, face);
-  const hair = sampleHair(data, face);
-
-  const skinPoint = skin?.point ?? {
-    x: face.x + face.width * 0.5,
-    y: face.y + face.height * 0.5,
-  };
-  const hairPoint = hair?.point ?? {
-    x: face.x + face.width * 0.5,
-    y: Math.max(2, face.y - face.height * 0.12),
-  };
+  const regions = faceRegions(face, pupils);
+  const hairSpot = hairRegion(face, pupils);
+  const measurement = measureFace(data, regions);
+  const hair = sampleDiscMedian(data, hairSpot, { darkHalf: true });
 
   return {
     canvas,
     imageData: data,
     face,
-    radius,
+    pupils,
+    detector,
+    workingEdge,
+    regions,
+    hairRegion: hairSpot,
+    measurement,
     illuminant,
-    lightCorrected: correctLight && illuminant.strength > 0.02,
-    points: { skin: skinPoint, hair: hairPoint },
-    skinHex: skin ? hex(skin.r, skin.g, skin.b) : null,
-    hairHex: hair ? hex(hair.r, hair.g, hair.b) : null,
-    skinPixels: skin?.count ?? 0,
-    // Whether the automatic read should be trusted without the user checking it.
-    confident: Boolean(skin && skin.count > 400 && !face.weak),
+    lightCorrected: corrected,
+    skinHex: measurement?.hex ?? null,
+    hairHex: hair?.hex ?? null,
+    skinPixels: measurement?.sampled ?? 0,
+    confident: Boolean(measurement && detector === 'cascade' && measurement.sampled > 400),
   };
 }
 
-/** Re-read both hex values after a point has moved. */
-export function readPoints(imageData, skinPoint, hairPoint, radius) {
-  const skin = sampleDisc(imageData, skinPoint.x, skinPoint.y, radius, { skinOnly: true });
-  const hair = sampleDisc(imageData, hairPoint.x, hairPoint.y, radius * 0.8);
+/** Re-measure after the user has moved a region or the hair point. */
+export function remeasure(imageData, regions, hairSpot) {
+  const measurement = measureFace(imageData, regions);
+  const hair = sampleDiscMedian(imageData, hairSpot, { darkHalf: true });
   return {
-    skinHex: skin ? hex(skin.r, skin.g, skin.b) : null,
-    hairHex: hair ? hex(hair.r, hair.g, hair.b) : null,
-    skinPixels: skin?.count ?? 0,
+    measurement,
+    skinHex: measurement?.hex ?? null,
+    hairHex: hair?.hex ?? null,
   };
 }

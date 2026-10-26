@@ -8,6 +8,8 @@ import { classifyShape, verticalProportions, volumeBudget } from '../core/anatom
 import { buildLooks } from '../core/outfit.js';
 import { OCCASIONS } from '../core/wardrobe.js';
 import * as photo from '../core/photo.js';
+import { createFittingRoom } from './figure3d.js';
+import { buildShareCard, downloadDataUrl } from './sharecard.js';
 import { drawLook } from './garments.js';
 
 const $ = (id) => document.getElementById(id);
@@ -85,84 +87,133 @@ export function initFitting({ onPalette } = {}) {
       view.getContext('2d').putImageData(result.imageData, 0, 0);
       stageWrap.classList.remove('u-hidden');
       $('photoGrid').classList.add('has-photo');
-      placeMarkers();
+      drawOverlay();
 
       const notes = [];
-      notes.push(result.face.weak
-        ? 'No face found with confidence, so the sample points are a guess — drag them onto your cheek and hair.'
-        : `Face located by ${result.face.source}.`);
-      if (result.lightCorrected) {
-        notes.push(`The light was ${Math.round(result.illuminant.strength * 100)}% off neutral, so it has been corrected before measuring.`);
+      if (result.detector === 'cascade') {
+        notes.push(`Face found by the cascade${result.pupils ? ', eyes located' : ''}.`);
+        if (result.pupils) {
+          const tilt = Math.abs(result.pupils.angle * 180 / Math.PI);
+          if (tilt > 3) notes.push(`Head tilted ${tilt.toFixed(0)}°, so the sample points are rotated to match.`);
+        }
+      } else if (result.detector === 'none') {
+        notes.push('No face found with confidence — drag the circle onto your face.');
+      } else {
+        notes.push('Found by skin-region search rather than the face model; check the circles.');
       }
-      notes.push('Both points are draggable.');
+      if (result.lightCorrected) {
+        notes.push(`Light was ${Math.round(result.illuminant.strength * 100)}% off neutral and has been corrected before measuring.`);
+      }
+      notes.push('Drag the large circle to move the face frame, the small one for hair.');
       $('detectNote').textContent = notes.join(' ');
 
       applyReading();
     } catch (err) {
       showError(err.message || 'That photo could not be read.');
+      console.error('[photo]', err);
     } finally {
       dropzone.style.opacity = '';
     }
   }
 
-  /* ----------------------------------------------------------- markers -- */
+  /* ------------------------------------------------- the sampling overlay -
+   *
+   * Five regions get measured, but five draggable handles would be a fiddly
+   * mess. So the regions are drawn as a read-only overlay — you can see
+   * exactly what was sampled — and two handles move them: one for the whole
+   * face frame, one for the hair.
+   */
 
   const markers = { skin: $('markerSkin'), hair: $('markerHair') };
 
-  function placeMarkers() {
-    if (!state.analysis) return;
-    const { points } = state.analysis;
-    for (const key of ['skin', 'hair']) {
-      const el = markers[key];
-      el.style.left = `${(points[key].x / view.width) * 100}%`;
-      el.style.top = `${(points[key].y / view.height) * 100}%`;
-      el.style.setProperty('--sw', key === 'skin' ? state.skinHex : state.hairHex);
+  function faceCentre() {
+    const r = state.analysis.regions;
+    return {
+      x: r.reduce((s, q) => s + q.x, 0) / r.length,
+      y: r.reduce((s, q) => s + q.y, 0) / r.length,
+    };
+  }
+
+  function drawOverlay() {
+    const a = state.analysis;
+    if (!a) return;
+    const pct = (v, total) => `${(v / total) * 100}%`;
+
+    let layer = stage.querySelector('.sample-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.className = 'sample-layer';
+      stage.insertBefore(layer, markers.skin);
     }
+    layer.innerHTML = a.regions.map((r) => `
+      <span class="sample-dot${r.outlier === true ? ' is-out' : ''}"
+        style="left:${pct(r.x, view.width)};top:${pct(r.y, view.height)};
+               width:${pct(r.radius * 2, view.width)};aspect-ratio:1"
+        title="${esc(r.label)}"></span>`).join('');
+
+    const c = faceCentre();
+    markers.skin.style.left = pct(c.x, view.width);
+    markers.skin.style.top = pct(c.y, view.height);
+    markers.skin.style.setProperty('--sw', state.skinHex ?? 'transparent');
+    markers.hair.style.left = pct(a.hairRegion.x, view.width);
+    markers.hair.style.top = pct(a.hairRegion.y, view.height);
+    markers.hair.style.setProperty('--sw', state.hairHex ?? 'transparent');
+  }
+
+  function moveBy(which, dx, dy) {
+    const a = state.analysis;
+    if (!a) return;
+    if (which === 'skin') {
+      a.regions = a.regions.map((r) => ({ ...r, x: r.x + dx, y: r.y + dy }));
+      a.face = { ...a.face, x: a.face.x + dx, y: a.face.y + dy };
+    } else {
+      a.hairRegion = { ...a.hairRegion, x: a.hairRegion.x + dx, y: a.hairRegion.y + dy };
+    }
+    const next = photo.remeasure(a.imageData, a.regions, a.hairRegion);
+    if (next.skinHex) state.skinHex = next.skinHex;
+    if (next.hairHex) state.hairHex = next.hairHex;
+    a.measurement = next.measurement ?? a.measurement;
+    drawOverlay();
+    applyReading();
   }
 
   for (const key of ['skin', 'hair']) {
     const el = markers[key];
     let dragging = false;
+    let last = null;
 
-    const move = (clientX, clientY) => {
+    const toCanvas = (clientX, clientY) => {
       const rect = stage.getBoundingClientRect();
-      const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * view.width;
-      const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height)) * view.height;
-      state.analysis.points[key] = { x, y };
-      const read = photo.readPoints(
-        state.analysis.imageData,
-        state.analysis.points.skin,
-        state.analysis.points.hair,
-        state.analysis.radius
-      );
-      if (read.skinHex) state.skinHex = read.skinHex;
-      if (read.hairHex) state.hairHex = read.hairHex;
-      placeMarkers();
-      applyReading();
+      return {
+        x: ((clientX - rect.left) / rect.width) * view.width,
+        y: ((clientY - rect.top) / rect.height) * view.height,
+      };
     };
 
     el.addEventListener('pointerdown', (e) => {
       if (!state.analysis) return;
       dragging = true;
+      last = toCanvas(e.clientX, e.clientY);
       el.setPointerCapture(e.pointerId);
       e.preventDefault();
     });
-    el.addEventListener('pointermove', (e) => { if (dragging) move(e.clientX, e.clientY); });
-    el.addEventListener('pointerup', () => { dragging = false; });
-    el.addEventListener('pointercancel', () => { dragging = false; });
+    el.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const now = toCanvas(e.clientX, e.clientY);
+      moveBy(key, now.x - last.x, now.y - last.y);
+      last = now;
+    });
+    const stop = () => { dragging = false; };
+    el.addEventListener('pointerup', stop);
+    el.addEventListener('pointercancel', stop);
 
-    // Keyboard nudging, because a draggable dot is useless to anyone not using
-    // a pointer.
     el.addEventListener('keydown', (e) => {
       if (!state.analysis) return;
-      const step = e.shiftKey ? 12 : 4;
-      const p = state.analysis.points[key];
+      const step = (e.shiftKey ? 14 : 5) * (view.width / 800);
       const map = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
       if (!map[e.key]) return;
       e.preventDefault();
-      const rect = stage.getBoundingClientRect();
-      move(rect.left + ((p.x + map[e.key][0]) / view.width) * rect.width,
-           rect.top + ((p.y + map[e.key][1]) / view.height) * rect.height);
+      moveBy(key, map[e.key][0], map[e.key][1]);
     });
   }
 
@@ -174,6 +225,8 @@ export function initFitting({ onPalette } = {}) {
     state.palette = palette;
 
     renderReading(state.reading, palette, note);
+    renderRegions();
+    renderTryOn(palette);
     onPalette?.(palette);
     $('buildHint').textContent = 'Set your height, then build.';
     $('buildBtn').removeAttribute('disabled');
@@ -328,6 +381,7 @@ export function initFitting({ onPalette } = {}) {
     $('swAvoid').innerHTML = palette.avoid
       .map((s, i) => swatchHtml(s, 'swatch--avoid', avoidLabels[i] ?? s.name)).join('');
 
+    renderAnchors(palette);
     $('contrastHead').textContent = palette.contrast.headline;
     $('contrastBody').textContent = palette.contrast.body;
 
@@ -384,6 +438,8 @@ export function initFitting({ onPalette } = {}) {
         </div>
       </article>`).join('');
 
+    setupFittingRoom(looks);
+
     // The explanations belong to the first look; the others differ only in the
     // pieces, and repeating five paragraphs three times helps nobody.
     $('why').innerHTML = looks[0].why.map((w, i) => `
@@ -408,6 +464,223 @@ export function initFitting({ onPalette } = {}) {
       setTimeout(() => el.style.setProperty('--v', el.dataset.v), 60 + i * 45);
     });
   }
+
+
+  /* --------------------------------------------- facial region readout -- */
+
+  function renderRegions() {
+    const grid = $('regionGrid');
+    const m = state.analysis?.measurement;
+    if (!m) {
+      grid.innerHTML = `<p class="caption">Using a sample reading, so there is nothing to measure across. Drop in a photo and this fills with your own face.</p>`;
+      return;
+    }
+    grid.innerHTML = m.regions.map((r) => {
+      if (!r.read) {
+        return `<div class="region is-out">
+          <span class="region__chip" style="background:repeating-linear-gradient(45deg,#ddd 0 4px,#eee 4px 8px)"></span>
+          <span class="region__name">${esc(r.label)}<small>not enough skin visible here</small></span>
+          <span class="region__de"></span><span class="region__flag">skipped</span></div>`;
+      }
+      return `<div class="region${r.outlier ? ' is-out' : ''}">
+        <span class="region__chip" style="background:${r.hex}"></span>
+        <span class="region__name">${esc(r.label)}<small>${esc(r.note)}</small></span>
+        <span class="region__de">ΔE ${r.deltaE}</span>
+        <span class="region__flag">${r.outlier ? 'excluded' : 'counted'}</span>
+      </div>`;
+    }).join('') + `<p class="caption" style="margin-top:var(--s-3)">
+      Across the regions that read as skin, your face varies by ΔE ${m.spread} — ${
+        m.spread < 4 ? 'very even' : m.spread < 8 ? 'normal variation' : 'quite uneven, usually one-sided light'
+      }. The dominant cluster covers ${Math.round(m.share * 100)}% of the sampled pixels.</p>`;
+  }
+
+  /* ------------------------------------------- your face against a colour */
+
+  function renderTryOn(palette) {
+    const stage = $('tryOnStage');
+    const canvas = $('faceCrop');
+    const swatches = $('tryOnSwatches');
+    const a = state.analysis;
+
+    if (!a?.face) {
+      $('tryOn').classList.add('u-hidden');
+      return;
+    }
+    $('tryOn').classList.remove('u-hidden');
+
+    // Crop the face out of the already-corrected pixels. Nothing is uploaded;
+    // this is the same canvas the measurement came from.
+    const pad = a.face.size * 0.72;
+    const sx = Math.max(0, a.face.x - pad);
+    const sy = Math.max(0, a.face.y - pad * 1.12);
+    const sw = Math.min(a.canvas.width - sx, pad * 2);
+    const sh = Math.min(a.canvas.height - sy, pad * 2.1);
+    const size = 320;
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(a.canvas, sx, sy, sw, sh, 0, 0, size, size);
+
+    const options = [
+      ...palette.foundation.slice(0, 2).map((c) => ({ ...c, bad: false })),
+      palette.white, palette.black,
+      ...palette.grounding.slice(0, 2).map((c) => ({ ...c, bad: false })),
+      palette.accent[0],
+      ...palette.avoid.map((c) => ({ ...c, bad: true })),
+    ];
+
+    swatches.innerHTML = options.map((c, i) =>
+      `<button class="tryon__sw${c.bad ? ' is-avoid' : ''}" type="button"
+        style="--sw:${c.hex}" data-hex="${c.hex}" aria-pressed="${i === 0}"
+        title="${esc(c.name)}${c.bad ? ' — one to avoid' : ''}"></button>`).join('');
+
+    stage.style.setProperty('--try', options[0].hex);
+    swatches.onclick = (e) => {
+      const btn = e.target.closest('[data-hex]');
+      if (!btn) return;
+      stage.style.setProperty('--try', btn.dataset.hex);
+      [...swatches.children].forEach((c) => c.setAttribute('aria-pressed', String(c === btn)));
+    };
+  }
+
+  /* ------------------------------------------------- black and white ---- */
+
+  function renderAnchors(palette) {
+    const anchorHtml = (a, heading) => `
+      <div class="anchor">
+        <span class="anchor__chip" style="background:${a.hex}"></span>
+        <div>
+          <span class="anchor__verdict">${esc(heading)}</span>
+          <div class="anchor__name">${esc(a.name)} <span class="mono" style="color:var(--ink-4)">${a.hex}</span></div>
+          <p class="anchor__body">${esc(a.body)}</p>
+          <div class="anchor__alts">
+            ${a.alternatives.map((alt) =>
+              `<span style="--sw:${alt.hex}"><i></i>${esc(alt.name)}</span>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    $('anchors').innerHTML =
+      anchorHtml(palette.black, palette.black.verdict) +
+      anchorHtml(palette.white, palette.white.verdict);
+  }
+
+  /* -------------------------------------------------- the fitting room -- */
+
+  let room = null;
+  let roomLooks = [];
+  let roomIndex = 0;
+  let layerOn = true;
+
+  function setupFittingRoom(looks) {
+    roomLooks = looks;
+    const controls = $('fitroomControls');
+    controls.innerHTML = looks.map((l, i) =>
+      `<button class="chip" type="button" data-look="${i}" aria-pressed="${i === roomIndex}">${esc(l.label)}</button>`).join('')
+      + `<button class="chip" type="button" id="layerToggle" aria-pressed="${layerOn}">Layer on</button>`
+      + `<button class="chip" type="button" id="saveCard">Save as image</button>`;
+
+    controls.onclick = (e) => {
+      const look = e.target.closest('[data-look]');
+      if (look) {
+        roomIndex = Number(look.dataset.look);
+        [...controls.querySelectorAll('[data-look]')].forEach((c) =>
+          c.setAttribute('aria-pressed', String(c === look)));
+        dress();
+        return;
+      }
+      if (e.target.closest('#saveCard')) {
+        saveCard(e.target.closest('#saveCard'));
+        return;
+      }
+      const toggle = e.target.closest('#layerToggle');
+      if (toggle) {
+        layerOn = !layerOn;
+        toggle.setAttribute('aria-pressed', String(layerOn));
+        toggle.textContent = layerOn ? 'Layer on' : 'Layer off';
+        dress();
+      }
+    };
+
+    renderFitroomSpecs();
+    if (room) { room.setMeasurements(measurementsForRoom()); dress(); }
+  }
+
+  function measurementsForRoom() {
+    const val = (id) => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : null; };
+    return { heightCm: val('height') ?? 175, chest: val('chest'), waist: val('waist'), hip: val('hip') };
+  }
+
+  function renderFitroomSpecs() {
+    const m = measurementsForRoom();
+    const look = roomLooks[roomIndex];
+    const rows = [
+      ['Height', `${m.heightCm}cm`, 'the figure is built to it'],
+      ['Chest', m.chest ? `${m.chest}cm` : '—', m.chest ? 'measured' : 'proportional estimate'],
+      ['Waist', m.waist ? `${m.waist}cm` : '—', m.waist ? 'measured' : 'proportional estimate'],
+      ['Ease', look ? `${Math.round((look.top?.fit === 'oversized' ? 5.8 : look.top?.fit === 'relaxed' ? 3.4 : look.top?.fit === 'wide' ? 5 : look.top?.fit === 'fitted' ? 1.2 : 2.2) * 10) / 10}cm` : '—', 'added by the top\u2019s fit'],
+    ];
+    $('fitroomSpecs').innerHTML = rows.map(([dt, dd, sub]) =>
+      `<div class="metric"><dt>${dt}</dt><dd>${dd}<small>${esc(sub)}</small></dd></div>`).join('');
+  }
+
+  async function saveCard(btn) {
+    const label = btn.textContent;
+    btn.textContent = 'Rendering…';
+    btn.disabled = true;
+    try {
+      const dataUrl = await buildShareCard({
+        reading: state.reading,
+        palette: state.palette,
+        look: roomLooks[roomIndex],
+        figure: room ? room.snapshot() : null,
+        url: location.origin + location.pathname,
+      });
+      downloadDataUrl(dataUrl, 'tone-reading.png');
+    } catch (err) {
+      console.error('[share card]', err);
+      btn.textContent = 'Could not render';
+      setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 2200);
+      return;
+    }
+    btn.textContent = label;
+    btn.disabled = false;
+  }
+
+  function dress() {
+    if (!room) return;
+    const look = roomLooks[roomIndex];
+    if (!look) return;
+    room.dressIn({ ...look, layerOn });
+    renderFitroomSpecs();
+  }
+
+  $('fitroomStart').addEventListener('click', async () => {
+    const stage = $('fitroomStage');
+    if (room) return;
+    stage.classList.add('is-loading');
+    $('fitroomStart').innerHTML = 'Loading the renderer <span class="spinner" aria-hidden="true"></span>';
+    try {
+      room = await createFittingRoom(stage);
+      room.setMeasurements(measurementsForRoom());
+      dress();
+      stage.classList.add('is-live');
+    } catch (err) {
+      stage.classList.remove('is-loading');
+      $('fitroomNote').textContent = `The 3D view could not start: ${err.message}. Everything else on this page still works.`;
+      console.error('[fitting room]', err);
+    }
+  });
+
+  // Keep the figure in step with the measurements as they change.
+  ['height', 'chest', 'waist', 'hip'].forEach((id) =>
+    $(id).addEventListener('change', () => {
+      if (room) room.setMeasurements(measurementsForRoom());
+      renderFitroomSpecs();
+    }));
+  heightRange.addEventListener('change', () => {
+    if (room) room.setMeasurements(measurementsForRoom());
+    renderFitroomSpecs();
+  });
 
   updateFrame();
   return state;
